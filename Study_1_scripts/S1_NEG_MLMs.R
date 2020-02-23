@@ -271,13 +271,18 @@ save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt.RData"),
      list=c("S1_NEG_PosEvnt", "S1_NEG_PosEvnt_form"))
 remove(list=c("S1_NEG_PosEvnt", "S1_NEG_PosEvnt_form"))
 gc()
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Model with level 1 random effects for both negative and positive event ratings 
+#   Note this model was not specifically included in the manuscript to simplify variance 
+#   decomposition efforts.
+
 S1_NEG_lv1_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + 
     (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
 )+lognormal()
 
-#Running model with priors (see above)
+# Running model with priors (see above)
 S1_NEG_lv1 <- brm(S1_NEG_lv1_form +
                     S1_NegEvnt_miss + S1_PosEvnt_miss + 
                         set_rescor(rescor = FALSE),
@@ -293,7 +298,7 @@ sink(paste0(study1.model, '/S1_NEG_lv1.txt'))
 print(summary(S1_NEG_lv1), digits = 5)
 sink()
 
-#Simple Model Check plotting:
+# Simple model check plotting:
 ppc_density <- 
   pp_check(S1_NEG_lv1, 
            newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
@@ -309,7 +314,7 @@ ppc_hist <-
            resp = "NEG")+
   ggtitle("S1_NEG_lv1 Model Posterior Residuals")
 
-#Saving Plots:
+# Saving plots:
 png(paste0(study1.graphics, '/S1_NEG_lv1_ppc.png'), 
     units = "in", 
     height = 5.5, 
@@ -324,13 +329,18 @@ save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1.RData"),
      list=c("S1_NEG_lv1", "S1_NEG_lv1_form"))
 remove(list=c("S1_NEG_lv1", "S1_NEG_lv1_form"))
 gc()
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Model with level 1 random effect for recent negative event ratings and DN 
+#   Note that due to the individually mean-centered level-1 effect, this model should capture an 
+#   estimate of DN's total between-subjects "effect" on momentary mood. 
+
 S1_NEG_NegEvnt_DN_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + 
     c.DN + (1 + mi(c.NegEvnt)|ID)
 )+lognormal()
 
-#Running model with priors (see above)
+# Running model with priors (see above)
 S1_NEG_NegEvnt_DN <- brm(S1_NEG_NegEvnt_DN_form +
                            S1_NegEvnt_miss + 
                            set_rescor(rescor = FALSE),
@@ -346,7 +356,7 @@ sink(paste0(study1.model, '/S1_NEG_NegEvnt_DN.txt'))
 print(summary(S1_NEG_NegEvnt_DN), digits = 5)
 sink()
 
-#Simple Model Check plotting:
+# Simple model check plotting:
 ppc_density <- 
   pp_check(S1_NEG_NegEvnt_DN, 
            newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
@@ -362,7 +372,7 @@ ppc_hist <-
            resp = "NEG")+
   ggtitle("S1_NEG_NegEvnt_DN Model Posterior Residuals")
 
-#Saving Plots:
+# Saving plots:
 png(paste0(study1.graphics, '/S1_NEG_NegEvnt_DN.png'), 
     units = "in", 
     height = 5.5, 
@@ -377,13 +387,20 @@ save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_DN.RData"),
      list=c("S1_NEG_NegEvnt_DN", "S1_NEG_NegEvnt_DN_form"))
 remove(list=c("S1_NEG_NegEvnt_DN", "S1_NEG_NegEvnt_DN_form"))
 gc()
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Model with level 1 random effect for recent positive event ratings and DN 
+#   Note that due to the individually mean-centered level-1 effect, this model should capture an 
+#   estimate of DN's total between-subjects "effect" on momentary mood. Relatedly, accoutning for 
+#   slight differences related to the Bayesian approach, this effect should be effectively the same
+#   as the one observed in the previous model. 
+
 S1_NEG_PosEvnt_DN_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt) + 
     c.DN + (1 + mi(c.PosEvnt)|ID)
 )+lognormal()
 
-#Running model with priors (see above)
+# Running model with priors (see above)
 S1_NEG_PosEvnt_DN <- brm(S1_NEG_PosEvnt_DN_form +
                            S1_PosEvnt_miss + 
                            set_rescor(rescor = FALSE),
@@ -399,7 +416,7 @@ sink(paste0(study1.model, '/S1_NEG_PosEvnt_DN.txt'))
 print(summary(S1_NEG_PosEvnt_DN), digits = 5)
 sink()
 
-#Simple Model Check plotting:
+# Simple model check plotting:
 ppc_density <- 
   pp_check(S1_NEG_PosEvnt_DN, 
            newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
@@ -415,7 +432,7 @@ ppc_hist <-
            resp = "NEG")+
   ggtitle("S1_NEG_PosEvnt_DN Model Posterior Residuals")
 
-#Saving Plots:
+# Saving plots:
 png(paste0(study1.graphics, '/S1_NEG_PosEvnt_DN.png'), 
     units = "in", 
     height = 5.5, 
@@ -430,7 +447,9 @@ save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_DN.RData"),
      list=c("S1_NEG_PosEvnt_DN", "S1_NEG_PosEvnt_DN_form"))
 remove(list=c("S1_NEG_PosEvnt_DN", "S1_NEG_PosEvnt_DN_form"))
 gc()
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# A model in which DN is included as a level-2 predictor in a model in which 
 S1_NEG_lv1_DN_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + 
     c.DN + (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
