@@ -1,0 +1,56 @@
+ Family: MV(lognormal, gaussian, gaussian) 
+  Links: mu = identity; sigma = identity
+         mu = identity; sigma = identity
+         mu = identity; sigma = identity 
+Formula: NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + (1 + mi(c.NegEvnt) + mi(c.PosEvnt) | ID) 
+         c.NegEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + m.NEG + sd.NEG + m.POS + sd.POS + (1 | ID) 
+         c.PosEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + m.NEG + sd.NEG + m.POS + sd.POS + (1 | ID) 
+   Data: dat.study1_model (Number of observations: 8890) 
+Samples: 3 chains, each with iter = 15000; warmup = 10000; thin = 1;
+         total post-warmup samples = 15000
+
+Group-Level Effects: 
+~ID (Number of levels: 127) 
+                                     Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sd(NEG_Intercept)                     0.31140   0.02006  0.27480  0.35352 1.00085     2003     4240
+sd(NEG_mic.NegEvnt)                   0.06065   0.00641  0.04879  0.07396 1.00011     6881    10487
+sd(NEG_mic.PosEvnt)                   0.04318   0.00636  0.03094  0.05592 1.00036     5465     9063
+sd(cNegEvnt_Intercept)                0.01016   0.00778  0.00039  0.02870 1.00015    11812     9048
+sd(cPosEvnt_Intercept)                0.00982   0.00748  0.00033  0.02769 1.00033    11424     7760
+cor(NEG_Intercept,NEG_mic.NegEvnt)    0.22908   0.11505 -0.00537  0.44273 1.00031     9519    10827
+cor(NEG_Intercept,NEG_mic.PosEvnt)   -0.38432   0.13246 -0.63392 -0.10872 1.00017     9212    11509
+cor(NEG_mic.NegEvnt,NEG_mic.PosEvnt) -0.25590   0.16218 -0.56524  0.06543 1.00052     6452     9172
+
+Population-Level Effects: 
+                    Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+NEG_Intercept        0.44209   0.02818  0.38631  0.49763 1.00325      920     1633
+cNegEvnt_Intercept   0.00039   0.10842 -0.21104  0.21372 1.00001    21525    13693
+cPosEvnt_Intercept   0.00061   0.10588 -0.20822  0.20876 1.00001    20052    13010
+cNegEvnt_m.NegEvnt   0.00001   0.03118 -0.06088  0.06021 1.00001    17927    12309
+cNegEvnt_m.PosEvnt   0.00009   0.02593 -0.05083  0.05078 1.00034    18313    12618
+cNegEvnt_sd.NegEvnt -0.00011   0.05758 -0.11199  0.11210 1.00012    24867    13303
+cNegEvnt_sd.PosEvnt  0.00036   0.04981 -0.09609  0.09899 0.99994    24064    12250
+cNegEvnt_m.NEG       0.00000   0.03181 -0.06399  0.06158 1.00031    17560    12665
+cNegEvnt_sd.NEG      0.00040   0.06315 -0.12282  0.12384 0.99993    20102    12521
+cNegEvnt_m.POS      -0.00014   0.01860 -0.03664  0.03666 0.99997    18652    13336
+cNegEvnt_sd.POS     -0.00105   0.05612 -0.11022  0.10900 1.00025    21362    12674
+cPosEvnt_m.NegEvnt   0.00008   0.03082 -0.06088  0.06088 1.00011    18749    12470
+cPosEvnt_m.PosEvnt  -0.00008   0.02524 -0.04971  0.04919 1.00013    18260    12413
+cPosEvnt_sd.NegEvnt -0.00064   0.05657 -0.11178  0.10856 1.00035    24742    13153
+cPosEvnt_sd.PosEvnt  0.00001   0.04812 -0.09406  0.09431 1.00000    23913    12415
+cPosEvnt_m.NEG      -0.00030   0.03126 -0.06142  0.06095 0.99992    17927    12638
+cPosEvnt_sd.NEG      0.00085   0.06174 -0.12142  0.12121 1.00020    21044    13126
+cPosEvnt_m.POS       0.00002   0.01829 -0.03625  0.03550 0.99994    20704    12496
+cPosEvnt_sd.POS      0.00007   0.05477 -0.10808  0.10783 0.99999    22574    12709
+NEG_mic.NegEvnt      0.08694   0.00700  0.07326  0.10074 1.00030     6343    10708
+NEG_mic.PosEvnt     -0.04711   0.00585 -0.05865 -0.03564 1.00018     7689    10511
+
+Family Specific Parameters: 
+               Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma_NEG       0.32827   0.00285  0.32269  0.33380 1.00005    17570    11377
+sigma_cNegEvnt  1.01119   0.00859  0.99429  1.02804 1.00035    20681    12036
+sigma_cPosEvnt  0.98598   0.00828  0.96992  1.00225 1.00021    19592    12441
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).

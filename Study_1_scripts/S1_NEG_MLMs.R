@@ -1,37 +1,44 @@
-###############################################################################
+###################################################################################################
 # Study 1 Modeling Script
 
-# Study 1 Negative Mood Models:
-###############################################################################
+# Negative and Positive event MLMs
+# Description: 
+#   The analyses below involve a series of increasingly complex Bayesian multilevel regression 
+#   models. The analyses were designed to address three broad research questions designed to provide
+#   a better understanding of the association between dispositional negativity and momentary 
+#   negative affect:
+#     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
+#     negativity and momentary negative affect? 
+#     2. What is a reasonable estimate of the associatin between dispositional negativity and 
+#     momentary negative affect that can attributed to differences in overall emotional context? 
+#     3. What is a reasonable estimate of the association between dispositional negativity and 
+#     momentary negative affect that can be attributed to reactivity to recent emotionally salient 
+#     events?
 
-#Imputation will be handled in the modeling stage itself. 
+# Modeling Notes: 
+#   * Exploratory analyses revealed that negative mood ratings were positively skewed, thus a 
+#   weakly informative lognormal prior was chosen for the negative event model
+#   * Missingness was addressed at runtime by taking draws from the posterior predictive 
+#   distribution - for both continuous predictors and momentary negative mood scores
+#   * To generate a more informative posterior predictive distribution in the missingness models, 
+#   we included summary scores of the EMA - (see: S1_PosEvnt_miss and S1_NegEvnt_miss)
+#   * NEG is mainly an aggregate of anxious mood - a limitation addressed in Study 2 
+#   * Event ratings were individually mean-centered to maintain separation of between- and within-
+#   subjects sources of variation in negative mood
+###################################################################################################
 
-#The same exact imputation model will be used in each case... 
-
-#These models will take longer to run and the output will be denser
-#Should be faster than fitting to multiple data sets though
-
-#------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+# Loading relevant packages:
 library(brms)
 library(rstan)
 library(rstanarm)
 library(bayesplot)
-library(pan)
-library(mitml)
-library(mice)
-library(parallel)
-library(RColorBrewer)
-library(ggridges)
-library(riverplot)
-library(ggalluvial)
-library(ggpubr)
 library(tidyverse)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-#------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 
-
-#------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 user<-ifelse(Sys.getenv("USERPROFILE")=="", "~", Sys.getenv("USERPROFILE"))
 wd<-paste0(user, '/Dropbox/UMD/Shackman Lab/EMA_MS')
 data.folder<-paste0(wd, '/Data')
@@ -40,11 +47,10 @@ study1.graphics<-paste0(study1.out, '/Graphics')
 study1.model<-paste0(study1.out, '/Model summaries')
 stan.code<-paste0(wd, '/Stan_code')
 EDA.folder<-paste0(study1.out, '/EDA')
-#------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 
-
-#------------------------------------------------------------------------------
-#Loading Study 1 Data (from Emotion MS - Shackman et al. 2017)
+#--------------------------------------------------------------------------------------------------
+# Loading Study 1 Data (from Emotion MS - Shackman et al. 2017)
 load(paste0(data.folder, '/Emotion MS environment.RData'))
 
 dat.study1_lv1 <- dat %>% 
@@ -80,9 +86,9 @@ dat.study1_model <- merge(dat.study1_lv1, dat.study1_lv2, by = "ID")
 dat.study1_model$c.NegEvnt <- dat.study1_model$NegEvnt - dat.study1_model$m.NegEvnt
 dat.study1_model$c.PosEvnt <- dat.study1_model$PosEvnt - dat.study1_model$m.PosEvnt
 
-#------------------------------------------------------------------------------
-#See previous modeling scripts for information about the imputation model
-#------------------------------------------------------------------------------
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Missing data models - incorporating information about individual distributions of EMA data
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 
 S1_PosEvnt_miss <- bf(
   c.PosEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + 
@@ -95,19 +101,21 @@ S1_NegEvnt_miss <- bf(
 ) + gaussian()
 
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Initial null intercept model - will be necessary to generate final variance estimates
+# Note the lognonrmal() prior for the intercept - due to positive skew of negative mood ratings NEG
 S1_NEG_ucm_form <- bf(
   NEG | mi() ~ 1 + (1|ID)
 )+lognormal()
 
-#Creating priors for intercept to help constrain final model in response space
+# Creating priors for intercept to help constrain final model in response space
 mu <- mean(log(dat.study1_model$NEG), na.rm=TRUE)
 sigma <- sd(log(dat.study1_model$NEG), na.rm = TRUE)
 
 Int_prior <- set_prior(paste0("normal(", mu, ",", sigma, ")"), 
                        class = "Intercept")
 
-#Running model with priors (see above)
+# Running model with priors (see above)
 S1_NEG_ucm <- brm(S1_NEG_ucm_form,
                      data = dat.study1_model, 
                      chains = 3,
@@ -121,7 +129,7 @@ sink(paste0(study1.model, '/S1_NEG_ucm.txt'))
 print(summary(S1_NEG_ucm), digits = 5)
 sink()
 
-#Simple Model Check plotting:
+# Simple model check plotting:
 ppc_density <- 
   pp_check(S1_NEG_ucm, 
            newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
@@ -135,7 +143,7 @@ ppc_hist <-
            type = "error_hist")+
   ggtitle("S1_NEG_ucm Model Posterior Residuals")
 
-#Saving Plots:
+# Saving plots:
 png(paste0(study1.graphics, '/S1_NEG_ucm_ppc.png'), 
     units = "in", 
     height = 5.5, 
@@ -146,22 +154,23 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_ucm.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_ucm.RData"), 
      list=c("S1_NEG_ucm", "S1_NEG_ucm_form"))
 remove(list=c("S1_NEG_ucm", "S1_NEG_ucm_form"))
 gc()
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Model with a level-1 random effect for negative event rating (indiviudally mean centered)
 S1_NEG_NegEvnt_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + (1 + mi(c.NegEvnt)|ID)
 )+lognormal()
 
-#Need to update intercept prior here
+# Need to update intercept prior here as there are technically now "multiple" responses 
 Int_prior <- set_prior(paste0("normal(", mu, ",", sigma, ")"), 
                        class = "Intercept", 
                        resp = "NEG")
 
-#Running model with priors (see above)
+# Running model with priors (see above)
 S1_NEG_NegEvnt <- brm(S1_NEG_NegEvnt_form + 
                         S1_NegEvnt_miss + 
                         set_rescor(rescor = FALSE),
@@ -177,7 +186,7 @@ sink(paste0(study1.model, '/S1_NEG_NegEvnt.txt'))
 print(summary(S1_NEG_NegEvnt), digits = 5)
 sink()
 
-#Simple Model Check plotting:
+# Simple model check plotting:
 ppc_density <- 
   pp_check(S1_NEG_NegEvnt, 
            newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
@@ -193,7 +202,7 @@ ppc_hist <-
            resp = "NEG")+
   ggtitle("S1_NEG_NegEvnt Model Posterior Residuals")
 
-#Saving Plots:
+# Saving plots:
 png(paste0(study1.graphics, '/S1_NEG_NegEvnt_ppc.png'), 
     units = "in", 
     height = 5.5, 
@@ -204,16 +213,18 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_NegEvnt.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt.RData"), 
      list=c("S1_NEG_NegEvnt", "S1_NEG_NegEvnt_form"))
 remove(list=c("S1_NEG_NegEvnt", "S1_NEG_NegEvnt_form"))
 gc()
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Model with a level-1 random effect for positive event rating (individually mean-centered)
 S1_NEG_PosEvnt_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt) + (1 + mi(c.PosEvnt)|ID)
 )+lognormal()
 
-#Running model with priors (see above)
+# Running model with priors (see above)
 S1_NEG_PosEvnt <- brm(S1_NEG_PosEvnt_form + 
                         S1_PosEvnt_miss + 
                         set_rescor(rescor = FALSE),
@@ -229,7 +240,7 @@ sink(paste0(study1.model, '/S1_NEG_PosEvnt.txt'))
 print(summary(S1_NEG_PosEvnt), digits = 5)
 sink()
 
-#Simple Model Check plotting:
+# Simple model check plotting:
 ppc_density <- 
   pp_check(S1_NEG_PosEvnt, 
            newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
@@ -245,7 +256,7 @@ ppc_hist <-
            resp = "NEG")+
   ggtitle("S1_NEG_PosEvnt Model Posterior Residuals")
 
-#Saving Plots:
+# Saving plots:
 png(paste0(study1.graphics, '/S1_NEG_PosEvnt_ppc.png'), 
     units = "in", 
     height = 5.5, 
@@ -256,7 +267,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_PosEvnt.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt.RData"), 
      list=c("S1_NEG_PosEvnt", "S1_NEG_PosEvnt_form"))
 remove(list=c("S1_NEG_PosEvnt", "S1_NEG_PosEvnt_form"))
 gc()
@@ -309,7 +320,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_lv1.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1.RData"), 
      list=c("S1_NEG_lv1", "S1_NEG_lv1_form"))
 remove(list=c("S1_NEG_lv1", "S1_NEG_lv1_form"))
 gc()
@@ -362,7 +373,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_NegEvnt_DN.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_DN.RData"), 
      list=c("S1_NEG_NegEvnt_DN", "S1_NEG_NegEvnt_DN_form"))
 remove(list=c("S1_NEG_NegEvnt_DN", "S1_NEG_NegEvnt_DN_form"))
 gc()
@@ -415,7 +426,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_PosEvnt_DN.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_DN.RData"), 
      list=c("S1_NEG_PosEvnt_DN", "S1_NEG_PosEvnt_DN_form"))
 remove(list=c("S1_NEG_PosEvnt_DN", "S1_NEG_PosEvnt_DN_form"))
 gc()
@@ -469,7 +480,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_lv1_DN.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_DN.RData"), 
      list=c("S1_NEG_lv1_DN", "S1_NEG_lv1_DN_form"))
 remove(list=c("S1_NEG_lv1_DN", "S1_NEG_lv1_DN_form"))
 gc()
@@ -522,7 +533,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_NegEvnt_Exp.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_Exp.RData"), 
      list=c("S1_NEG_NegEvnt_Exp", "S1_NEG_NegEvnt_Exp_form"))
 remove(list=c("S1_NEG_NegEvnt_Exp", "S1_NEG_NegEvnt_Exp_form"))
 gc()
@@ -575,7 +586,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_PosEvnt_Exp.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_Exp.RData"), 
      list=c("S1_NEG_PosEvnt_Exp", "S1_NEG_PosEvnt_Exp_form"))
 remove(list=c("S1_NEG_PosEvnt_Exp", "S1_NEG_PosEvnt_Exp_form"))
 gc()
@@ -629,7 +640,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_lv1_Exp.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_Exp.RData"), 
      list=c("S1_NEG_lv1_Exp", "S1_NEG_lv1_Exp_form"))
 remove(list=c("S1_NEG_lv1_Exp", "S1_NEG_lv1_Exp_form"))
 gc()
@@ -682,7 +693,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_NegEvnt_Rct.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_Rct.RData"), 
      list=c("S1_NEG_NegEvnt_Rct", "S1_NEG_NegEvnt_Rct_form"))
 remove(list=c("S1_NEG_NegEvnt_Rct", "S1_NEG_NegEvnt_Rct_form"))
 gc()
@@ -735,7 +746,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_PosEvnt_Rct.RData", 
+save(file=paste0(study1.out, "/S1_NEG_PosEvnt_Rct.RData"), 
      list=c("S1_NEG_PosEvnt_Rct", "S1_NEG_PosEvnt_Rct_form"))
 remove(list=c("S1_NEG_PosEvnt_Rct", "S1_NEG_PosEvnt_Rct_form"))
 gc()
@@ -789,7 +800,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_lv1_Rct.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_Rct.RData"), 
      list=c("S1_NEG_lv1_Rct", "S1_NEG_lv1_Rct_form"))
 remove(list=c("S1_NEG_lv1_Rct", "S1_NEG_lv1_Rct_form"))
 gc()
@@ -842,7 +853,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_NegEvnt_Flr.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_Flr.RData"), 
      list=c("S1_NEG_NegEvnt_Flr", "S1_NEG_NegEvnt_Flr_form"))
 remove(list=c("S1_NEG_NegEvnt_Flr", "S1_NEG_NegEvnt_Flr_form"))
 gc()
@@ -895,7 +906,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_PosEvnt_Flr.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_Flr.RData"), 
      list=c("S1_NEG_PosEvnt_Flr", "S1_NEG_PosEvnt_Flr_form"))
 remove(list=c("S1_NEG_PosEvnt_Flr", "S1_NEG_PosEvnt_Flr_form"))
 gc()
@@ -950,7 +961,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file="C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Study 1 output/Posteriors/S1_NEG_lv1_Flr.RData", 
+save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_Flr.RData"), 
      list=c("S1_NEG_lv1_Flr", "S1_NEG_lv1_Flr_form"))
 remove(list=c("S1_NEG_lv1_Flr", "S1_NEG_lv1_Flr_form"))
 gc()
