@@ -1,15 +1,14 @@
 ###################################################################################################
-# Study 1 Modeling Script
+# Study 1 Modeling Script: Negative Mood Models
 
-# Negative and Positive event MLMs
 # Description: 
 #   The analyses below involve a series of increasingly complex Bayesian multilevel regression 
-#   models. The analyses were designed to address three broad research questions designed to provide
-#   a better understanding of the association between dispositional negativity and momentary 
+#   models. The analyses addressed three broad research questions designed to provide a better 
+#   understanding of the association between dispositional negativity and momentary 
 #   negative affect:
 #     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
 #     negativity and momentary negative affect? 
-#     2. What is a reasonable estimate of the associatin between dispositional negativity and 
+#     2. What is a reasonable estimate of the association between dispositional negativity and 
 #     momentary negative affect that can attributed to differences in overall emotional context? 
 #     3. What is a reasonable estimate of the association between dispositional negativity and 
 #     momentary negative affect that can be attributed to reactivity to recent emotionally salient 
@@ -17,7 +16,7 @@
 
 # Modeling Notes: 
 #   * Exploratory analyses revealed that negative mood ratings were positively skewed, thus a 
-#   weakly informative lognormal prior was chosen for the negative event model
+#   weakly informative lognormal prior was chosen for these negative mood scores
 #   * Missingness was addressed at runtime by taking draws from the posterior predictive 
 #   distribution - for both continuous predictors and momentary negative mood scores
 #   * To generate a more informative posterior predictive distribution in the missingness models, 
@@ -89,7 +88,6 @@ dat.study1_model$c.PosEvnt <- dat.study1_model$PosEvnt - dat.study1_model$m.PosE
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 # Missing data models - incorporating information about individual distributions of EMA data
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
-
 S1_PosEvnt_miss <- bf(
   c.PosEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + 
     m.NEG + sd.NEG + m.POS + sd.POS + (1|ID)
@@ -99,7 +97,6 @@ S1_NegEvnt_miss <- bf(
   c.NegEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + 
     m.NEG + sd.NEG + m.POS + sd.POS + (1|ID)
 ) + gaussian()
-
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 # Initial null intercept model - will be necessary to generate final variance estimates
@@ -391,7 +388,7 @@ gc()
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Model with level 1 random effect for recent positive event ratings and DN 
 #   Note that due to the individually mean-centered level-1 effect, this model should capture an 
-#   estimate of DN's total between-subjects "effect" on momentary mood. Relatedly, accoutning for 
+#   estimate of DN's total between-subjects "effect" on momentary mood. Relatedly, accounting for 
 #   slight differences related to the Bayesian approach, this effect should be effectively the same
 #   as the one observed in the previous model. 
 
@@ -687,8 +684,8 @@ gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # This model in conjunction with the models including just DN or just average negative event ratings
-# will be used to isolate the amount of "unique" variance attributable to DN, and to overal negative
-# contexts
+# will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
+# negative contexts
 
 S1_NEG_NegEvnt_DN_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + 
@@ -745,8 +742,8 @@ gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # This model in conjunction with the models including just DN or just average positive event ratings
-# will be used to isolate the amount of "unique" variance attributable to DN, and to overal positive
-# contexts
+# will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
+# positive contexts
 
 S1_NEG_PosEvnt_DN_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt) + 
@@ -922,7 +919,7 @@ gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # This model actually represents the "final" model for this modeling tree (DN, positive events, 
-# positive mood). All variance components obtained in the present set of analyses stem from 
+# negative mood). All variance components obtained in the present set of analyses stem from 
 # isolated R2 differences moving from the unconditional model to this model. 
 
 S1_NEG_PosEvnt_Rct_form <- bf(
@@ -1037,12 +1034,11 @@ remove(list=c("S1_NEG_lv1_Rct", "S1_NEG_lv1_Rct_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# The "Flr" part of this model is to address possible floor or even ceiling effects could be 
+# The "Flr" part of this model is to address possible floor/ceiling effects could be 
 # partially to blame for any DN reactivity effects detected in the models. For instance, one could 
 # possibly argue that average ratings of recent negative events could "limit" the range of response
-# and only those with less intense negative events had much room to move "up" the negative mood 
-# scale and only those with more intense negative events had much room to move "down" the negative
-# mood scale. 
+# and only those with less (or more) intense negative events had much room to move in terms of 
+# momentary mood. 
 
 S1_NEG_NegEvnt_Flr_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt)*c.DN + mi(c.NegEvnt)*m.NegEvnt +
@@ -1099,7 +1095,6 @@ gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # See note above for previous model. This model is essentially the positive event version. 
-
 S1_NEG_PosEvnt_Flr_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt)*c.DN + mc(c.PosEvnt)*m.PosEvnt +
     m.PosEvnt + (1 + mi(c.PosEvnt)|ID)
