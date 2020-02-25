@@ -1,0 +1,43 @@
+ Family: MV(gaussian, gaussian) 
+  Links: mu = identity; sigma = identity
+         mu = identity; sigma = identity 
+Formula: POS | mi() ~ 1 + mi(c.PosEvnt) * c.DN + mi(c.PosEvnt) * m.PosEvnt + m.PosEvnt + (1 + mi(c.PosEvnt) | ID) 
+         c.PosEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + m.NEG + sd.NEG + m.POS + sd.POS + (1 | ID) 
+   Data: dat.study1_model (Number of observations: 8890) 
+Samples: 3 chains, each with iter = 15000; warmup = 10000; thin = 1;
+         total post-warmup samples = 15000
+
+Group-Level Effects: 
+~ID (Number of levels: 127) 
+                                   Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sd(POS_Intercept)                   0.69630   0.04539  0.61509  0.79208 1.00219     1736     3576
+sd(POS_mic.PosEvnt)                 0.17318   0.01585  0.14411  0.20637 1.00018     5520    10112
+sd(cPosEvnt_Intercept)              0.00989   0.00757  0.00037  0.02818 1.00003    12012     7018
+cor(POS_Intercept,POS_mic.PosEvnt) -0.02469   0.10518 -0.23041  0.18117 1.00052     5835     8928
+
+Population-Level Effects: 
+                          Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+POS_Intercept              1.34666   0.31423  0.72524  1.96341 1.00132     1308     2551
+cPosEvnt_Intercept         0.00047   0.10454 -0.20504  0.20607 1.00017    19238    13711
+POS_c.DN                  -0.32314   0.06297 -0.44875 -0.19600 1.00119     1147     2339
+POS_m.PosEvnt              0.50955   0.08878  0.33455  0.68454 1.00124     1341     2783
+cPosEvnt_m.NegEvnt         0.00006   0.03047 -0.06035  0.06039 1.00007    12278    12080
+cPosEvnt_m.PosEvnt         0.00004   0.02516 -0.04984  0.04916 1.00008    12728    11722
+cPosEvnt_sd.NegEvnt       -0.00026   0.05704 -0.11381  0.11044 1.00004    17881    13134
+cPosEvnt_sd.PosEvnt        0.00018   0.04852 -0.09559  0.09491 1.00008    17408    11975
+cPosEvnt_m.NEG             0.00002   0.03132 -0.06182  0.06127 1.00018    11653    11990
+cPosEvnt_sd.NEG           -0.00041   0.06198 -0.12244  0.12103 1.00017    13965    12324
+cPosEvnt_m.POS            -0.00019   0.01822 -0.03629  0.03529 1.00009    14394    12726
+cPosEvnt_sd.POS            0.00015   0.05472 -0.10854  0.10625 1.00019    14423    11789
+POS_mic.PosEvnt            0.12422   0.09530 -0.06266  0.31016 1.00092     4859     7396
+POS_mic.PosEvnt:c.DN       0.05607   0.01852  0.01943  0.09264 1.00034     5976     8924
+POS_mic.PosEvnt:m.PosEvnt  0.05912   0.02754  0.00522  0.11315 1.00080     4914     7446
+
+Family Specific Parameters: 
+               Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma_POS       0.73112   0.00630  0.71893  0.74354 1.00029    17821    12090
+sigma_cPosEvnt  0.98588   0.00833  0.96952  1.00236 0.99995    20316    12092
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).

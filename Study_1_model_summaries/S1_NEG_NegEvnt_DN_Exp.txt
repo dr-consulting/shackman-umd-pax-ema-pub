@@ -1,0 +1,41 @@
+ Family: MV(lognormal, gaussian) 
+  Links: mu = identity; sigma = identity
+         mu = identity; sigma = identity 
+Formula: NEG | mi() ~ 1 + mi(c.NegEvnt) + c.DN + m.NegEvnt + (1 + mi(c.NegEvnt) | ID) 
+         c.NegEvnt | mi() ~ 1 + m.NegEvnt + m.PosEvnt + sd.NegEvnt + sd.PosEvnt + m.NEG + sd.NEG + m.POS + sd.POS + (1 | ID) 
+   Data: dat.study1_model (Number of observations: 8890) 
+Samples: 3 chains, each with iter = 15000; warmup = 10000; thin = 1;
+         total post-warmup samples = 15000
+
+Group-Level Effects: 
+~ID (Number of levels: 127) 
+                                   Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sd(NEG_Intercept)                   0.25170   0.01670  0.22193  0.28769 1.00024     2588     4393
+sd(NEG_mic.NegEvnt)                 0.06595   0.00640  0.05420  0.07938 1.00029     5827    10096
+sd(cNegEvnt_Intercept)              0.01007   0.00765  0.00041  0.02864 1.00043    11658     8023
+cor(NEG_Intercept,NEG_mic.NegEvnt)  0.20583   0.11134 -0.02139  0.41615 1.00005     6018     8510
+
+Population-Level Effects: 
+                    Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+NEG_Intercept       -0.03687   0.09060 -0.21492  0.14123 1.00070     1567     3531
+cNegEvnt_Intercept   0.00123   0.10773 -0.21119  0.21112 1.00024    17659    13126
+NEG_c.DN             0.09211   0.02377  0.04553  0.13778 1.00098     1644     3283
+NEG_m.NegEvnt        0.20180   0.03729  0.12913  0.27532 1.00069     1566     3364
+cNegEvnt_m.NegEvnt  -0.00004   0.03119 -0.06128  0.06063 1.00003    13301    11833
+cNegEvnt_m.PosEvnt  -0.00005   0.02579 -0.05001  0.05098 1.00013    14250    11775
+cNegEvnt_sd.NegEvnt -0.00004   0.05838 -0.11442  0.11428 0.99997    16662    12157
+cNegEvnt_sd.PosEvnt -0.00075   0.04958 -0.09584  0.09666 0.99991    17074    12225
+cNegEvnt_m.NEG      -0.00003   0.03243 -0.06405  0.06271 0.99998    13897    12088
+cNegEvnt_sd.NEG      0.00021   0.06485 -0.12721  0.12673 0.99992    15200    12051
+cNegEvnt_m.POS      -0.00003   0.01870 -0.03738  0.03633 1.00017    14919    11947
+cNegEvnt_sd.POS     -0.00030   0.05641 -0.10948  0.11163 1.00034    16271    12162
+NEG_mic.NegEvnt      0.09255   0.00722  0.07817  0.10671 1.00023     6823     9290
+
+Family Specific Parameters: 
+               Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma_NEG       0.33338   0.00291  0.32778  0.33916 1.00004    15928    11605
+sigma_cNegEvnt  1.01122   0.00862  0.99435  1.02820 1.00023    19169    11612
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).
