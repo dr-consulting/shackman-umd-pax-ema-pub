@@ -273,7 +273,6 @@ gc()
 # Model with level 1 random effects for both negative and positive event ratings 
 #   Note this model was not specifically included in the manuscript to simplify variance 
 #   decomposition efforts.
-
 S1_NEG_lv1_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + 
     (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
@@ -331,7 +330,6 @@ gc()
 # Model with level 1 random effect for recent negative event ratings and DN 
 #   Note that due to the individually mean-centered level-1 effect, this model should capture an 
 #   estimate of DN's total between-subjects "effect" on momentary mood. 
-
 S1_NEG_NegEvnt_DN_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + 
     c.DN + (1 + mi(c.NegEvnt)|ID)
@@ -391,7 +389,6 @@ gc()
 #   estimate of DN's total between-subjects "effect" on momentary mood. Relatedly, accounting for 
 #   slight differences related to the Bayesian approach, this effect should be effectively the same
 #   as the one observed in the previous model. 
-
 S1_NEG_PosEvnt_DN_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt) + 
     c.DN + (1 + mi(c.PosEvnt)|ID)
@@ -451,7 +448,6 @@ gc()
 #   Note that this model was not reported in the manuscript to simplify variance extracted 
 #   calculations. It is presented here for completeness and the model output is in the repo for 
 #   transparency.
-
 S1_NEG_lv1_DN_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + 
     c.DN + (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
@@ -509,7 +505,6 @@ gc()
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # This model includes *average* negative event ratings as a measure of an individual's overall 
 # negative event context. This is our proxy for overall exposure to more intense negative events. 
-
 S1_NEG_NegEvnt_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + 
     m.NegEvnt + (1 + mi(c.NegEvnt)|ID)
@@ -567,7 +562,6 @@ gc()
 # Model is the same as the one above, with the exception that the focus is on inclusion of between-
 # subjects differences in average positive mood rating. The idea is similar though in that this is 
 # our proxy for the overall contextual effect of reporting more intense positive events on average.
-
 S1_NEG_PosEvnt_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt) + 
     m.PosEvnt + (1 + mi(c.PosEvnt)|ID)
@@ -627,7 +621,6 @@ gc()
 #   Note that as with model models that included both event types as predictors, these models were
 #   not included in the manuscript - but are included here along with the relevant outputs elsewhere
 #   in this repo. 
-
 S1_NEG_lv1_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + 
     m.NegEvnt + m.PosEvnt + (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
@@ -686,7 +679,6 @@ gc()
 # This model in conjunction with the models including just DN or just average negative event ratings
 # will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
 # negative contexts
-
 S1_NEG_NegEvnt_DN_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + 
     c.DN + m.NegEvnt + (1 + mi(c.NegEvnt)|ID)
@@ -744,7 +736,6 @@ gc()
 # This model in conjunction with the models including just DN or just average positive event ratings
 # will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
 # positive contexts
-
 S1_NEG_PosEvnt_DN_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt) + 
     c.DN + m.PosEvnt + (1 + mi(c.PosEvnt)|ID)
@@ -804,7 +795,6 @@ gc()
 #   Note that as with model models that included both event types as predictors, these models were
 #   not included in the manuscript - but are included here along with the relevant outputs elsewhere
 #   in this repo. 
-
 S1_NEG_lv1_DN_Exp_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt) + mi(c.PosEvnt) + 
     c.DN + m.NegEvnt + m.PosEvnt + (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
@@ -863,7 +853,6 @@ gc()
 # This model actually represents the "final" model for this modeling tree (DN, negative events, 
 # negative mood). All variance components obtained in the present set of analyses stem from 
 # isolated R2 differences moving from the unconditional model to this model. 
-
 S1_NEG_NegEvnt_Rct_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt)*c.DN + 
     m.NegEvnt + (1 + mi(c.NegEvnt)|ID)
@@ -921,7 +910,6 @@ gc()
 # This model actually represents the "final" model for this modeling tree (DN, positive events, 
 # negative mood). All variance components obtained in the present set of analyses stem from 
 # isolated R2 differences moving from the unconditional model to this model. 
-
 S1_NEG_PosEvnt_Rct_form <- bf(
   NEG | mi() ~ 1 + mi(c.PosEvnt)*c.DN + 
     m.PosEvnt + (1 + mi(c.PosEvnt)|ID)
@@ -978,7 +966,6 @@ gc()
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Simultaneous inclustion of all DN reactivity effects for completness 
 #   Note not presented in the manuscript (like similar models defined throughout)
-
 S1_NEG_lv1_Rct_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt)*c.DN + mi(c.PosEvnt)*c.DN + 
     m.NegEvnt + m.PosEvnt + (1 + mi(c.NegEvnt) + mi(c.PosEvnt)|ID)
@@ -1039,7 +1026,6 @@ gc()
 # possibly argue that average ratings of recent negative events could "limit" the range of response
 # and only those with less (or more) intense negative events had much room to move in terms of 
 # momentary mood. 
-
 S1_NEG_NegEvnt_Flr_form <- bf(
   NEG | mi() ~ 1 + mi(c.NegEvnt)*c.DN + mi(c.NegEvnt)*m.NegEvnt +
     m.NegEvnt + (1 + mi(c.NegEvnt)|ID)

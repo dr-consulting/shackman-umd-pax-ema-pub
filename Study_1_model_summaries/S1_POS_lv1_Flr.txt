@@ -11,52 +11,90 @@ Samples: 3 chains, each with iter = 15000; warmup = 10000; thin = 1;
 
 Group-Level Effects: 
 ~ID (Number of levels: 127) 
-                                     Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sd(POS_Intercept)                     0.64278   0.04368  0.56390  0.73664 1.00148     1478     2718
-sd(POS_mic.NegEvnt)                   0.11370   0.01301  0.08906  0.14048 1.00092     5351     8611
-sd(POS_mic.PosEvnt)                   0.16123   0.01528  0.13308  0.19281 1.00090     4626     7694
-sd(cNegEvnt_Intercept)                0.01009   0.00774  0.00039  0.02865 1.00012    11012     6554
-sd(cPosEvnt_Intercept)                0.01000   0.00754  0.00041  0.02800 1.00117    10081     6178
-cor(POS_Intercept,POS_mic.NegEvnt)   -0.34235   0.10897 -0.54561 -0.11851 0.99992     6129     9031
-cor(POS_Intercept,POS_mic.PosEvnt)   -0.01207   0.10651 -0.22047  0.19486 1.00067     4509     7667
-cor(POS_mic.NegEvnt,POS_mic.PosEvnt) -0.02719   0.14399 -0.30391  0.25821 1.00108     1856     3460
+                                     Estimate Est.Error l-95% CI u-95% CI
+sd(POS_Intercept)                     0.64292   0.04357  0.56447  0.73543
+sd(POS_mic.NegEvnt)                   0.11404   0.01300  0.08958  0.14103
+sd(POS_mic.PosEvnt)                   0.16133   0.01523  0.13299  0.19346
+sd(cNegEvnt_Intercept)                0.01004   0.00774  0.00039  0.02876
+sd(cPosEvnt_Intercept)                0.00985   0.00745  0.00041  0.02763
+cor(POS_Intercept,POS_mic.NegEvnt)   -0.34027   0.11094 -0.54554 -0.10960
+cor(POS_Intercept,POS_mic.PosEvnt)   -0.01557   0.10668 -0.22539  0.19189
+cor(POS_mic.NegEvnt,POS_mic.PosEvnt) -0.03318   0.14492 -0.30862  0.24663
+                                        Rhat Bulk_ESS Tail_ESS
+sd(POS_Intercept)                    1.00091     1408     3402
+sd(POS_mic.NegEvnt)                  1.00026     6554     8898
+sd(POS_mic.PosEvnt)                  1.00063     5467     8820
+sd(cNegEvnt_Intercept)               1.00047    11763     8060
+sd(cPosEvnt_Intercept)               1.00044    12485     7428
+cor(POS_Intercept,POS_mic.NegEvnt)   1.00134     6645     9676
+cor(POS_Intercept,POS_mic.PosEvnt)   1.00010     5070     9309
+cor(POS_mic.NegEvnt,POS_mic.PosEvnt) 1.00263     2179     4888
 
 Population-Level Effects: 
-                          Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-POS_Intercept              1.93215   0.30725  1.32842  2.53620 1.00485      919     2172
-cNegEvnt_Intercept        -0.00028   0.10779 -0.21162  0.21197 0.99999    13871    12673
-cPosEvnt_Intercept        -0.00153   0.10518 -0.20516  0.20873 1.00016    14475    11815
-POS_c.DN                  -0.22520   0.05857 -0.34197 -0.11148 1.00143     1143     2429
-POS_m.NegEvnt             -0.50240   0.10901 -0.71260 -0.28467 1.00418      959     2014
-POS_m.PosEvnt              0.68479   0.08914  0.50979  0.86043 1.00247      841     2107
-cNegEvnt_m.NegEvnt        -0.00015   0.03108 -0.06084  0.06134 1.00065     7842     9877
-cNegEvnt_m.PosEvnt         0.00016   0.02581 -0.05076  0.05073 1.00077     8654    10627
-cNegEvnt_sd.NegEvnt       -0.00017   0.05788 -0.11530  0.11210 1.00005    10764    11164
-cNegEvnt_sd.PosEvnt        0.00061   0.04932 -0.09608  0.09668 1.00030    10538    11163
-cNegEvnt_m.NEG            -0.00003   0.03209 -0.06345  0.06237 1.00040     7693    10552
-cNegEvnt_sd.NEG            0.00055   0.06381 -0.12088  0.12862 1.00063     9150    10752
-cNegEvnt_m.POS            -0.00018   0.01874 -0.03712  0.03650 1.00050     9961    11432
-cNegEvnt_sd.POS           -0.00015   0.05649 -0.10980  0.10975 1.00028    10406    10923
-cPosEvnt_m.NegEvnt        -0.00012   0.03039 -0.05865  0.05984 1.00036     7856     9820
-cPosEvnt_m.PosEvnt         0.00030   0.02496 -0.04884  0.04940 1.00077     8041     9904
-cPosEvnt_sd.NegEvnt        0.00061   0.05671 -0.11096  0.11184 1.00010    11217    11376
-cPosEvnt_sd.PosEvnt        0.00031   0.04835 -0.09603  0.09473 1.00031    11462    11389
-cPosEvnt_m.NEG             0.00024   0.03110 -0.06110  0.06083 1.00043     8093     9738
-cPosEvnt_sd.NEG            0.00020   0.06153 -0.11968  0.12163 0.99996     9151    11279
-cPosEvnt_m.POS            -0.00001   0.01829 -0.03593  0.03579 1.00049     9676     9936
-cPosEvnt_sd.POS           -0.00081   0.05496 -0.10846  0.10690 1.00053     9345    10952
-POS_mic.NegEvnt           -0.21889   0.05817 -0.33327 -0.10311 1.00067     3635     7078
-POS_mic.PosEvnt            0.11658   0.08974 -0.05641  0.29428 1.00019     3280     5977
-POS_mic.NegEvnt:c.DN      -0.02771   0.01413 -0.05502 -0.00018 1.00051     4671     8555
-POS_mic.PosEvnt:c.DN       0.05287   0.01765  0.01879  0.08789 1.00051     4553     7753
-POS_mic.NegEvnt:m.NegEvnt  0.01727   0.02357 -0.03036  0.06390 1.00076     3552     7132
-POS_mic.PosEvnt:m.PosEvnt  0.05432   0.02593  0.00241  0.10433 1.00022     3288     6338
+                          Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS
+POS_Intercept              1.93278   0.30537  1.33632  2.54465 1.00279     1092
+cNegEvnt_Intercept        -0.00056   0.10778 -0.21011  0.20810 0.99998    16880
+cPosEvnt_Intercept        -0.00086   0.10442 -0.20439  0.20063 0.99987    15449
+POS_c.DN                  -0.22595   0.06189 -0.34615 -0.10350 1.00190     1116
+POS_m.NegEvnt             -0.50378   0.10685 -0.71531 -0.29235 1.00197     1058
+POS_m.PosEvnt              0.68441   0.08806  0.51286  0.85511 1.00264      970
+cNegEvnt_m.NegEvnt        -0.00036   0.03128 -0.06187  0.05991 1.00012    10199
+cNegEvnt_m.PosEvnt         0.00012   0.02591 -0.05068  0.04978 1.00011    10162
+cNegEvnt_sd.NegEvnt        0.00105   0.05811 -0.11240  0.11417 1.00019    14150
+cNegEvnt_sd.PosEvnt       -0.00040   0.05003 -0.09912  0.09793 0.99996    13801
+cNegEvnt_m.NEG             0.00072   0.03188 -0.06201  0.06342 1.00038     9555
+cNegEvnt_sd.NEG           -0.00039   0.06335 -0.12527  0.12428 1.00018    11309
+cNegEvnt_m.POS            -0.00021   0.01871 -0.03618  0.03656 1.00032    10749
+cNegEvnt_sd.POS            0.00008   0.05558 -0.11029  0.10908 1.00002    12510
+cPosEvnt_m.NegEvnt        -0.00021   0.03050 -0.05896  0.05995 1.00049     9443
+cPosEvnt_m.PosEvnt         0.00008   0.02486 -0.04896  0.04879 1.00010     9505
+cPosEvnt_sd.NegEvnt        0.00039   0.05752 -0.11293  0.11332 1.00011    12503
+cPosEvnt_sd.PosEvnt       -0.00020   0.04803 -0.09400  0.09477 1.00031    13055
+cPosEvnt_m.NEG             0.00034   0.03141 -0.06007  0.06286 1.00059     8948
+cPosEvnt_sd.NEG           -0.00011   0.06242 -0.12263  0.12058 1.00025    10336
+cPosEvnt_m.POS             0.00007   0.01806 -0.03501  0.03618 1.00008    10895
+cPosEvnt_sd.POS           -0.00003   0.05406 -0.10513  0.10558 1.00044    11118
+POS_mic.NegEvnt           -0.22107   0.05938 -0.33684 -0.10409 1.00114     4128
+POS_mic.PosEvnt            0.11825   0.08872 -0.05483  0.29299 1.00035     4488
+POS_mic.NegEvnt:c.DN      -0.02795   0.01419 -0.05614  0.00009 1.00024     4977
+POS_mic.PosEvnt:c.DN       0.05233   0.01720  0.01862  0.08577 1.00088     5309
+POS_mic.NegEvnt:m.NegEvnt  0.01828   0.02404 -0.02946  0.06527 1.00109     4047
+POS_mic.PosEvnt:m.PosEvnt  0.05387   0.02559  0.00366  0.10405 1.00030     4651
+                          Tail_ESS
+POS_Intercept                 1973
+cNegEvnt_Intercept           12260
+cPosEvnt_Intercept           13215
+POS_c.DN                      1906
+POS_m.NegEvnt                 2272
+POS_m.PosEvnt                 2045
+cNegEvnt_m.NegEvnt           10995
+cNegEvnt_m.PosEvnt           11775
+cNegEvnt_sd.NegEvnt          12185
+cNegEvnt_sd.PosEvnt          12367
+cNegEvnt_m.NEG               10299
+cNegEvnt_sd.NEG              11051
+cNegEvnt_m.POS               10143
+cNegEvnt_sd.POS              11776
+cPosEvnt_m.NegEvnt           10738
+cPosEvnt_m.PosEvnt           11077
+cPosEvnt_sd.NegEvnt          11800
+cPosEvnt_sd.PosEvnt          12172
+cPosEvnt_m.NEG               11085
+cPosEvnt_sd.NEG              11272
+cPosEvnt_m.POS               10993
+cPosEvnt_sd.POS              11682
+POS_mic.NegEvnt               8284
+POS_mic.PosEvnt               7462
+POS_mic.NegEvnt:c.DN          8948
+POS_mic.PosEvnt:c.DN          8455
+POS_mic.NegEvnt:m.NegEvnt     7812
+POS_mic.PosEvnt:m.PosEvnt     7762
 
 Family Specific Parameters: 
                Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sigma_POS       0.70048   0.00612  0.68865  0.71246 1.00034    13493    11496
-sigma_cNegEvnt  1.01119   0.00851  0.99444  1.02813 1.00075    13725    11595
-sigma_cPosEvnt  0.98591   0.00843  0.96963  1.00281 1.00000    14495    11570
+sigma_POS       0.70054   0.00610  0.68879  0.71267 1.00013    14216    11617
+sigma_cNegEvnt  1.01126   0.00863  0.99442  1.02804 0.99999    15368    11485
+sigma_cPosEvnt  0.98597   0.00821  0.97002  1.00230 0.99999    16000    11203
 
 Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 is a crude measure of effective sample size, and Rhat is the potential 

@@ -678,7 +678,6 @@ gc()
 # This model in conjunction with the models including just DN or just average negative event ratings
 # will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
 # negative contexts
-
 S1_POS_NegEvnt_DN_Exp_form <- bf(
   POS | mi() ~ 1 + mi(c.NegEvnt) + 
     c.DN + m.NegEvnt + (1 + mi(c.NegEvnt)|ID)
@@ -736,7 +735,6 @@ gc()
 # This model in conjunction with the models including just DN or just average positive event ratings
 # will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
 # positive contexts
-
 S1_POS_PosEvnt_DN_Exp_form <- bf(
   POS | mi() ~ 1 + mi(c.PosEvnt) + 
     c.DN + m.PosEvnt + (1 + mi(c.PosEvnt)|ID)
