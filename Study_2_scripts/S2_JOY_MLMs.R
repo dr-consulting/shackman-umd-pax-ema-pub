@@ -1,5 +1,5 @@
 ####################################################################################################
-# Study 2 Modeling Script: Joy Mood Models
+# Study 2 Modeling Script: Cheerful Mood Models
 
 # Description: 
 #   The analyses below involve a series of increasingly complex Bayesian multilevel regression 
@@ -651,7 +651,7 @@ ppc_hist <-
            type = "error_hist")+
   ggtitle("S2_JOY_NegEvnt_prop.NegEvnt Model Posterior Residuals")
 
-#Saving plots:
+# Saving plots:
 png(paste0(study2.graphics, '/S2_JOY_NegEvnt_prop.NegEvnt_ppc.png'),
     units = "in",
     height = 5.5,
