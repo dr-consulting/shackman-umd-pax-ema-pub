@@ -9,7 +9,7 @@
 #     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
 #     negativity and momentary cheerful affect? 
 #     2. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary cheerful affect that can attributed to differences in overall emotional context? 
+#     momentary cheerful affect that can be attributed to differences in overall emotional context? 
 #     3. What is a reasonable estimate of the association between dispositional negativity and 
 #     momentary cheerful affect that can be attributed to reactivity to recent emotionally salient 
 #     events?

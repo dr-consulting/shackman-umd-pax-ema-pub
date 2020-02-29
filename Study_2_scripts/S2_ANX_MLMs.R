@@ -9,18 +9,18 @@
 #     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
 #     negativity and momentary anxious affect? 
 #     2. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary anxious affect that can attributed to differences in overall emotional context? 
+#     momentary anxious affect that can be attributed to differences in overall emotional context? 
 #     3. What is a reasonable estimate of the association between dispositional negativity and 
 #     momentary anxious affect that can be attributed to reactivity to recent emotionally salient 
 #     events?
 
 # Modeling Notes: 
 #   * Exploratory analyses revealed that anxious mood ratings were positively skewed in their
-#   distribution, thus a weakly informative normal prior was chosen for these anxious mood scores
+#   distribution, thus a weakly informative lognormal prior was chosen for these anxious mood scores
 #   * Missingness was addressed via multiple imputation (see imputation script elsewhere)
 #   * To generate a more informative posterior predictive distribution in the missingness models, 
 #   we included summary scores of the EMA
-#   * JOY is mainly an aggregate of anxious mood - and resembles the main positive mood outcome
+#   * ANX is mainly an aggregate of anxious mood - and resembles the main negative mood outcome
 #   from Study 1
 #   * Event ratings were individually mean-centered to maintain separation of between- and within-
 #   subjects sources of variation in anxious mood
