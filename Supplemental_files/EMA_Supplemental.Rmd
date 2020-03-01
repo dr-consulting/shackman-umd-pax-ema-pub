@@ -1,0 +1,428 @@
+---
+title: 'Research Supplement: Decomposing Momentary Mood among Dispostionally Negative Young Adults'
+author: "Matthew G. Barstead, Kathryn A. DeYoung, Allegra S. Anderson, Jennifer S. Weinstein, & Alexander J. Shackman"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+
+load("C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Data/study2_clean.rdata")
+load('C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data_FA.RData')
+load('C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data.RData')
+
+#load('/home/matthew/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data_FA.RData')
+#load('/home/matthew/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data.RData')
+library(tidyverse)
+library(nFactors)
+library(papaja)
+library(kableExtra)
+library(lavaan)
+```
+
+*Note*: will remove author page for submission.
+
+\pagebreak
+
+# Description
+
+This document contains supplemental information and graphics designed to enhance the transparent reporting of our results in an empirical study titled: "Decomposing Momentary Mood among Dispositionally Negative Young Adults", published in *XXXXXX*. For those interested in the raw `.Rmd` (i.e., the Rmarkdown file) used to generate this document, it can be found at [GitHub Link - BLINDED FOR REVIEW].  
+
+\pagebreak
+
+## Supplemental Table S1 - Rotated Loadings from Split-Half Factor Analysis of Study 2 Momentary Mood Items
+
+```{r S2_SuppT1, results = 'asis', message = FALSE}
+fit1<-psych::principal(dat.EFA[,3:17], nfactors=4, rotate = 'oblimin')
+load1<-unclass(fit1$loadings)
+
+load1<-round(load1, digits = 2)
+
+colnames(load1)[1:4]<-c('Positive', 'Negative', 'Angry', 'Tired')
+
+papaja::apa_table(load1, 
+                  caption = 'Loadings from Split Sample 1', 
+                  placement = 'h', 
+                  row.names = TRUE)
+```
+
+\pagebreak
+
+## Supplemental Figure S1 - Histogram and Density Overlay of Study 1 Dispositional Negativity Scores
+
+```{r S1_SuppF1}
+#Using Freedman-Diaconis rule for selecting appropriate binwidth:
+h <- 2 * IQR(supp_DN_study1$DN) / length(supp_DN_study1$DN)^(1/3)
+
+#In Maryland State Colors - Thank you Lord Baltimore 
+dens<-data.frame(DN = density(supp_DN_study1$DN)$x, 
+                 Density = density(supp_DN_study1$DN)$y)
+
+g1<-ggplot()+
+  geom_histogram(data=supp_DN_study1,
+                 aes(x=DN, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=DN, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Standardized Dispositional Negativity')
+g1
+```
+
+\pagebreak
+
+## Supplemental Figure S2 - Histogram and Density Overlay of Study 1 Momentary Mood Scores
+
+```{r S1_SuppF2, warning=FALSE}
+dens_NA<-data.frame(DN = density(na.omit(supp_Mood_study1$MAFS_NA))$x, 
+                    Density = density(na.omit(supp_Mood_study1$MAFS_NA))$y)
+
+dens_PA<-data.frame(DN = density(na.omit(supp_Mood_study1$MAFS_PA))$x, 
+                    Density = density(na.omit(supp_Mood_study1$MAFS_PA))$y)
+
+#Using Freedman-Diaconis rule for selecting appropriate binwidth:
+h <- 2 * IQR(na.omit(supp_Mood_study1$MAFS_NA)) / length(na.omit(supp_Mood_study1$MAFS_NA))^(1/3)
+g1<-ggplot()+
+  geom_histogram(data = supp_Mood_study1, 
+                 aes(x=MAFS_NA, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens_NA, 
+            aes(x=DN, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Momentary Negative Mood Ratings')
+
+
+h <- 2 * IQR(na.omit(supp_Mood_study1$MAFS_PA)) / length(na.omit(supp_Mood_study1$MAFS_PA))^(1/3)
+g2<-ggplot()+
+  geom_histogram(data = supp_Mood_study1, 
+                 aes(x=MAFS_PA, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens_PA, 
+            aes(x=DN, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Momentary Positive Mood Ratings')
+cowplot::plot_grid(g1, g2, labels = c('A', 'B'), ncol = 2)
+
+```
+
+Panel A of **Supplemental Figure S2** diplays the histogram and density overlay of momentary negative mood ratings, which are clearly positivel skewed. Panel B of **Supplemental Figure S2** displays the relatively more symmetrical distribution of positive mood ratings.  
+
+\pagebreak
+
+## Supplemental Figure S3 - Histogram and Density Overlay of Study 2 Dispositional Negativity Scores
+```{r S2_SuppF3}
+#Using Freedman-Diaconis rule for selecting appropriate binwidth:
+h <- 2 * IQR(dat.lv2$DN_ScreenAndLab1) / length(dat.lv2$DN_ScreenAndLab1)^(1/3)
+
+#In Maryland State Colors - Thank you Lord Baltimore 
+dens<-data.frame(DN = density(dat.lv2$DN_ScreenAndLab1)$x, 
+                 Density = density(dat.lv2$DN_ScreenAndLab1)$y)
+
+g1<-ggplot()+
+  geom_histogram(data=dat.lv2,
+                 aes(x=DN_ScreenAndLab1, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=DN, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Standardized Dispositional Negativity')
+g1
+```
+
+\pagebreak
+
+## Supplemental Figure S4 - Scree Plots of Split Half Principal Components Analysis for Study 2 Momentary Mood Items
+```{r S2_SuppF4}
+ev1 <- eigen(cor(dat.EFA[,3:17])) # get eigenvalues
+ap1 <- parallel(subject=nrow(dat.EFA[,3:17]),var=ncol(dat.EFA[,3:17]),
+  rep=1000, cent=.05)
+nS1 <- nScree(x=ev1$values, aparallel=ap1$eigen$qevpea)
+
+plot_samp1<-data.frame(Component = 1:ncol(dat.EFA[,3:17]), 
+                       Eigenvalue = nS1$Analysis$Eigenvalues, 
+                       Horns_PA = nS1$Analysis$Par.Analysis)
+
+g1<-ggplot(data = plot_samp1)+
+  geom_point(aes(x = Component, y = Eigenvalue, color = "Obtained Eigenvalues"), pch=16, size = 1.5)+
+  geom_line(aes(x = Component, y = Eigenvalue, color = "Obtained Eigenvalues"))+
+  geom_point(aes(x = Component, y = Horns_PA, color = "Horn's Parallel Analysis"), pch=17, size = 1.5)+
+  geom_line(aes(x = Component, y = Horns_PA, color = "Horn's Parallel Analysis"))+
+  scale_color_manual(values = c("Horn's Parallel Analysis" = "#ffd520", "Obtained Eigenvalues" = "#E03a3e"), 
+                     name = "")+
+  theme_bw()+
+  ggtitle(paste0("Split Half Sample 1 (", nrow(dat.EFA), " Observations)"))
+g1
+```
+
+Results from the split-half parallel analysis support retention of four factors using the 95th percentile values generated from randomly generated uncorrelated data. 
+
+\pagebreak
+
+## Supplemental Figure S5 - Histograms and Density Overlays of Study 2 Momentary Mood Composites and *a priori* Proposed Facets
+
+```{r S2_SuppF5}
+#Negative Composite
+h <- 2 * IQR(na.omit(dat.study2$NEG)) / length(na.omit(dat.study2$NEG))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$NEG))$x, 
+                 Density = density(na.omit(dat.study2$NEG))$y)
+g_Neg<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=NEG, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Negative Mood Ratings')
+
+#Positive Composite
+h <- 2 * IQR(na.omit(dat.study2$POS)) / length(na.omit(dat.study2$POS))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$POS))$x, 
+                 Density = density(na.omit(dat.study2$POS))$y)
+
+g_Pos<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=POS, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Positive Mood Ratings')
+
+#Anxious Mood Ratings
+h <- 2 * IQR(na.omit(dat.study2$ANX)) / length(na.omit(dat.study2$ANX))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$ANX))$x, 
+                 Density = density(na.omit(dat.study2$ANX))$y)
+
+g_Anx<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=ANX, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Anxious Mood Ratings')
+
+#Depressed Mood Ratings
+#Had to expand to 20% - 80% to find acceptable binwidth (IQR was 0 - such little variability...)
+h <- 2 * (quantile(dat.study2$DEP, .80, na.rm = TRUE) - quantile(dat.study2$DEP, .20, na.rm = TRUE))/length(na.omit(dat.study2$DEP))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$DEP))$x, 
+                 Density = density(na.omit(dat.study2$DEP))$y)
+
+g_Dep<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=DEP, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Depressed Mood Ratings')
+
+#Joyous Mood Ratings
+h <- 2 * IQR(na.omit(dat.study2$JOY)) / length(na.omit(dat.study2$JOY))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$JOY))$x, 
+                 Density = density(na.omit(dat.study2$JOY))$y)
+
+g_Joy<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=JOY, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Joyous Mood Ratings')
+
+#Calm Mood Ratings
+h <- 2 * IQR(na.omit(dat.study2$CALM)) / length(na.omit(dat.study2$CALM))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$CALM))$x, 
+                 Density = density(na.omit(dat.study2$CALM))$y)
+
+g_Calm<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=CALM, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Calm Mood Ratings')
+
+#Angry Mood 
+h <- 2 * IQR(na.omit(dat.study2$ANG)) / length(na.omit(dat.study2$ANG))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$ANG))$x, 
+                 Density = density(na.omit(dat.study2$ANG))$y)
+
+g_Angry<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=ANG, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Angry Mood Ratings')
+
+#Tried Mood
+h <- 2 * IQR(na.omit(dat.study2$TRD)) / length(na.omit(dat.study2$TRD))^(1/3)
+dens<-data.frame(x = density(na.omit(dat.study2$TRD))$x, 
+                 Density = density(na.omit(dat.study2$TRD))$y)
+
+g_Tired<-ggplot()+
+  geom_histogram(data = dat.study2, 
+                 aes(x=TRD, y=..density..), 
+                 binwidth = h, 
+                 fill='#ffd520')+
+  geom_line(data = dens, 
+            aes(x=x, y=Density), 
+            color = '#E03a3e', 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Tired Mood Ratings')
+
+cowplot::plot_grid(g_Neg, g_Pos, g_Tired, g_Anx, g_Joy, g_Angry, g_Dep, g_Calm, ggplot()+theme_minimal(),
+                   labels = c("A", "B", "C", "D", "E", "F", "G", "H", ""), 
+                   ncol = 3)
+```
+
+In the first column of the combined plot (i.e., Panels A, D, and G), the negative mood composite derived from the split half factor analysis results, and two *a priori* facets designed to tap anxious and depressed momentary mood. The second column of plots (i.e., Panels B, E, and H) display similar composites and facets in our momentary measures of positive affect. The third and final column (i.e., Panels C and F) display the distributions of momentary tired and angry mood ratings. 
+
+\pagebreak
+
+# Supplemental Figure S6 - Correlations, Univariate, and Bivariate Distributions of Study 2 Momentary Mood Composites and Facets
+
+```{r S2_SuppF6}
+psych::pairs.panels(dat.study2[,c("NEG", "ANX", "DEP", "ANG", "TRD", "POS", "JOY", "CALM")])
+```
+
+\pagebreak
+
+## Supplemental Analysis - Initial and Final Confirmatory Factor Analysis Models
+
+These analyses were conducted on a subset of momentary mood items taken from the second half of the data (exploratory analyses were performed on the first half of the randomly split data set). Analyses were performed using a multilevel confirmatory factor analysis approach in *lavaan* (CITE). Latent factors were allowed to correlate (i.e., an orthogonal structure was not assumed). 
+
+The initial model include no item-level covariances either at the within-subject or the between-subject levels of the model. The final model included within-subject covariances for items loading on the separate positive and negative mood facets. There were also two error covariances added at the between-subjects level of the model. Standardized model summaries are available on the next two pages. The `Std.all` contains the standardized values for each parameter. Readers are most likely interested in the `Latent Variables:` tables in the output at each level of the model.  
+
+\pagebreak
+
+### Initial CFA - No Item-Level Covariances
+```{r S2_SuppAn1, message = FALSE}
+CFA.mod<-'
+level: 1
+  W_PA=~Joy+Cheer+Enthus+Content+Relax+Calm
+  W_NA=~Nerv+Worry+Afraid+Hopeless+Sad
+  W_ANG=~Angry+Annoy
+  W_TRD=~Tired+Slug
+
+level: 2
+  B_PA=~Joy+Cheer+Enthus+Content+Relax+Calm
+  B_NA=~Nerv+Worry+Afraid+Hopeless+Sad
+  B_ANG=~Angry+Annoy
+  B_TRD=~Tired+Slug
+'
+
+fit.CFA<-sem(model = CFA.mod, 
+             data=dat.CFA, 
+             cluster = 'ID', 
+             estimator = 'MLR')
+summary(fit.CFA, 
+        standardized=TRUE, 
+        fit.measures=TRUE)
+```
+
+\pagebreak
+
+### Final CFA - Includes Item Error Covariances
+```{r S2_SuppAn2, message = FALSE}
+CFA.mod11<-'
+level: 1
+  W_PA=~Joy+Cheer+Enthus+Content+Relax+Calm
+  W_NA=~Nerv+Worry+Afraid+Hopeless+Sad
+  W_ANG=~Angry+Annoy
+  W_TRD=~Tired+Slug
+
+#Adding in covariances for facets (based on MI + theoretical expectations)
+  Relax ~~ Calm
+  Hopeless ~~ Sad
+  Nerv ~~ Worry
+  Nerv ~~ Afraid
+  Worry ~~ Afraid
+  Content ~~ Relax
+  Content ~~ Calm
+  Joy ~~ Enthus
+  Joy ~~ Cheer 
+  Cheer ~~ Enthus
+
+level: 2
+B_PA=~Joy+Cheer+Enthus+Content+Relax+Calm
+B_NA=~Nerv+Worry+Afraid+Hopeless+Sad
+B_ANG=~Angry+Annoy
+B_TRD=~Tired+Slug
+
+#Adding in covariances for facets (based on MI + theoretical expectations)
+Relax ~~ Calm
+Nerv ~~ Worry
+'
+
+fit.CFA11<-sem(model = CFA.mod11, 
+             data=dat.CFA, 
+             cluster = 'ID', 
+             estimator = 'MLR')
+
+summary(fit.CFA11, 
+        standardized=TRUE, 
+        fit.measures=TRUE)
+```
+
+\pagebreak
+
+### Comparing Model Fit:
+
+For the sake of completeness, a test of model improvement from model 1 to model 11 is presented below. The reason for 11 models is that modifications were used as a partial guide in determining the appropriateness of adding certain error covariances. 
+
+```{r SuppAn3, message=FALSE}
+anova(fit.CFA, fit.CFA11)
+```
+
+Note that this is not an exhaustive test of the factor structure of these momentary mood items. There are certainly other reasonable model structures that were not tested here, especially considering the various ways one could specify the between-subjects and within-subjects models. Thus, we are not of the opinion that this factor structure represents the "true" properties of our momentary mood items. Instead, we see these analyses as a relatively robust effort to develop an appropriate measurement model for the set of mood items we collected during our EMA surveys.  
