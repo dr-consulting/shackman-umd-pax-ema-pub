@@ -16,7 +16,8 @@
 
 # Modeling Notes: 
 #   * Exploratory analyses revealed that cheerful mood ratings were positively skewed in their
-#   distribution, thus a weakly informative normal prior was chosen for these cheerful mood scores
+#   distribution, thus a weakly informative lognormal prior was chosen for these cheerful mood 
+#   scores
 #   * Missingness was addressed via multiple imputation (see imputation script elsewhere)
 #   * To generate a more informative posterior predictive distribution in the missingness models, 
 #   we included summary scores of the EMA
@@ -48,7 +49,7 @@ EDA.folder<-paste0(study2.out, '/EDA')
 #---------------------------------------------------------------------------------------------------
 
 #---------------------------------------------------------------------------------------------------
-# Loading Study 2 Data with imputed values
+# Loading Study 2 data with imputed values
 load(paste0(data.folder, '/Study2_Clean_w_Impute.RData'))
 
 dat.study2_list_stacked <- data.frame()
@@ -293,7 +294,6 @@ save(list = c('S2_JOY_prop.PosEvnt', 'S2_JOY_prop.PosEvnt_form'),
      file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_prop.PosEvnt.RData')
 remove(S2_JOY_prop.PosEvnt)
 gc()
-
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Model that includes two "level 2" predictors - DN and proportion of EMA reports that included the 
