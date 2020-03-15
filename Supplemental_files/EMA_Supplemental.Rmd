@@ -1,18 +1,26 @@
 ---
 title: 'Research Supplement: Decomposing Momentary Mood among Dispostionally Negative Young Adults'
-author: "Matthew G. Barstead, Kathryn A. DeYoung, Allegra S. Anderson, Jennifer S. Weinstein, & Alexander J. Shackman"
+author: 
+  - "Matthew G. Barstead" 
+  - "Kathryn A. DeYoung" 
+  - "Allegra S. Anderson" 
+  - "Jennifer S. Weinstein"
+  - "Alexander J. Shackman"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+user<-ifelse(Sys.getenv("USERPROFILE")=="", "~", Sys.getenv("USERPROFILE"))
+wd<-paste0(user, '/Dropbox/UMD/Shackman Lab/EMA_MS')
+data.folder<-paste0(wd, '/Data')
+study2.out<-paste0(wd, '/Study 2 output')
+study2.graphics<-paste0(study2.out, '/Graphics')
+study2.model<-paste0(study2.out, '/Model summaries')
+stan.code<-paste0(wd, '/Stan_code')
+EDA.folder<-paste0(study2.out, '/EDA')
 
-load("C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Data/study2_clean.rdata")
-load('C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data_FA.RData')
-load('C:/Users/Mbars/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data.RData')
-
-#load('/home/matthew/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data_FA.RData')
-#load('/home/matthew/Dropbox/UMD/Shackman Lab/EMA_MS/Data/EMA_Supplemental_Data.RData')
+load(paste0(data.folder, "/Supplemental.RData"))
 library(tidyverse)
 library(nFactors)
 library(papaja)
@@ -37,24 +45,25 @@ fit1<-psych::principal(dat.EFA[,3:17], nfactors=4, rotate = 'oblimin')
 load1<-unclass(fit1$loadings)
 
 load1<-round(load1, digits = 2)
+load1[abs(load1)<.30]<-""
 
 colnames(load1)[1:4]<-c('Positive', 'Negative', 'Angry', 'Tired')
 
 papaja::apa_table(load1, 
-                  caption = 'Loadings from Split Sample 1', 
                   placement = 'h', 
                   row.names = TRUE)
 ```
+*Note*. $N = 114, N_{obs} = 5577$
 
 \pagebreak
 
 ## Supplemental Figure S1 - Histogram and Density Overlay of Study 1 Dispositional Negativity Scores
 
 ```{r S1_SuppF1}
-#Using Freedman-Diaconis rule for selecting appropriate binwidth:
+# Using Freedman-Diaconis rule for selecting appropriate binwidth:
 h <- 2 * IQR(supp_DN_study1$DN) / length(supp_DN_study1$DN)^(1/3)
 
-#In Maryland State Colors - Thank you Lord Baltimore 
+# In Maryland State Colors - Thank you Lord Baltimore 
 dens<-data.frame(DN = density(supp_DN_study1$DN)$x, 
                  Density = density(supp_DN_study1$DN)$y)
 
@@ -84,7 +93,7 @@ dens_NA<-data.frame(DN = density(na.omit(supp_Mood_study1$MAFS_NA))$x,
 dens_PA<-data.frame(DN = density(na.omit(supp_Mood_study1$MAFS_PA))$x, 
                     Density = density(na.omit(supp_Mood_study1$MAFS_PA))$y)
 
-#Using Freedman-Diaconis rule for selecting appropriate binwidth:
+# Using Freedman-Diaconis rule for selecting appropriate binwidth:
 h <- 2 * IQR(na.omit(supp_Mood_study1$MAFS_NA)) / length(na.omit(supp_Mood_study1$MAFS_NA))^(1/3)
 g1<-ggplot()+
   geom_histogram(data = supp_Mood_study1, 
@@ -114,25 +123,176 @@ g2<-ggplot()+
   ylab('Density')+
   xlab('Momentary Positive Mood Ratings')
 cowplot::plot_grid(g1, g2, labels = c('A', 'B'), ncol = 2)
-
 ```
 
-Panel A of **Supplemental Figure S2** diplays the histogram and density overlay of momentary negative mood ratings, which are clearly positivel skewed. Panel B of **Supplemental Figure S2** displays the relatively more symmetrical distribution of positive mood ratings.  
+Panel A of **Supplemental Figure S2** diplays the histogram and density overlay of momentary negative mood ratings, which are clearly positively skewed. Panel B of **Supplemental Figure S2** displays the relatively more symmetrical distribution of positive mood ratings.  
+
+\pagebreak 
+
+## Supplemental Figure SX - Bivariate Associations between Dispositional Negativity Scores and Study 1 Average Event Ratings
+
+```{r S1_SuppFXa, message=FALSE, fig.height=7, fig.width=7}
+# function for standardizing label positioning in plots
+label_pos <- function(min_val, max_val, rel_location){
+  range <- max_val - min_val
+  delta <- range*rel_location
+  return(min_val + delta)
+}
+
+# custom function for aggregating regression outputs to use in generation of plots
+regression <- function(df, x, y){
+  # setting the regression function. 
+  form<-as.formula(
+    paste(y, "~", x)
+  )
+  reg_fun<-lm(data = df, 
+              formula = form)  #regression function
+  # getting the slope, intercept, R square and adjusted R squared of 
+  # the regression function (with 3 decimals).
+  slope<-round(coef(reg_fun)[2],3)  
+  intercept<-round(coef(reg_fun)[1],3) 
+  R2<-round(as.numeric(summary(reg_fun)[8]),3)
+  r<-round(sqrt(R2)*slope/abs(slope), digits = 3)
+  R2.Adj<-round(as.numeric(summary(reg_fun)[9]),3)
+  p_val<-round(as.numeric(summary(reg_fun)$coefficients[2,4]), digits = 3)
+  tmp.DF<-data.frame(slope, 
+                     intercept, 
+                     R2, 
+                     r, 
+                     R2.Adj, 
+                     p_val)
+  return(tmp.DF)
+}
+
+# For association between DN and negative event ratings
+DN_NegEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "NegEvnt_mean")
+
+g1 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = NegEvnt_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Negative Event Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Negative Event Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_NegEvnt_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+
+# For association between DN and anxious mood ratings
+DN_NegMood_rtg_reg <- regression(supp_descrip_study1, "DN", "NEG_mean")
+
+g2 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = NEG_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Negative Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Negative Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_NegMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and positve event ratings
+DN_PosEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "PosEvnt_mean")
+
+g3 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = PosEvnt_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Positive Event Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Positive Event Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_PosEvnt_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) + 
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and cheerful mood ratings
+DN_PosMood_rtg_reg <- regression(supp_descrip_study1, "DN", "POS_mean")
+
+g4 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = POS_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Positive Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Positive Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_PosMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) + 
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# Combining plots and adding marginal historgrams for added information
+cowplot::plot_grid(ggExtra::ggMarginal(g1, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g2, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g3, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g4, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"),
+                   ncol = 2, 
+                   labels = c("A", "B", "C", "D"))
+```
+*Note*. DN = Dispositional Negativity. The top histogram is effectiely repeated across each plot. The top row displays the association between dispositional negativity scores and participants' mean negative event ratings in plot **A** and the association between dispositional negativity and participants' mean negative momentary mood ratings in panel **B**. The same associations are presented in panels **C** and **D** but for the corresponding positively valenced measures. 
 
 \pagebreak
 
 ## Supplemental Figure S3 - Histogram and Density Overlay of Study 2 Dispositional Negativity Scores
 ```{r S2_SuppF3}
-#Using Freedman-Diaconis rule for selecting appropriate binwidth:
-h <- 2 * IQR(dat.lv2$DN_ScreenAndLab1) / length(dat.lv2$DN_ScreenAndLab1)^(1/3)
+# Using Freedman-Diaconis rule for selecting appropriate binwidth:
+h <- 2 * IQR(supp_DN_study2$DN) / length(supp_DN_study2$DN)^(1/3)
 
-#In Maryland State Colors - Thank you Lord Baltimore 
-dens<-data.frame(DN = density(dat.lv2$DN_ScreenAndLab1)$x, 
-                 Density = density(dat.lv2$DN_ScreenAndLab1)$y)
+# In Maryland State Colors - Thank you Lord Baltimore 
+dens<-data.frame(DN = density(supp_DN_study2$DN)$x, 
+                 Density = density(supp_DN_study2$DN)$y)
 
 g1<-ggplot()+
-  geom_histogram(data=dat.lv2,
-                 aes(x=DN_ScreenAndLab1, y=..density..), 
+  geom_histogram(data=supp_DN_study2,
+                 aes(x=DN, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
   geom_line(data = dens, 
@@ -147,6 +307,242 @@ g1
 
 \pagebreak
 
+## Supplemental Figure SX - Bivariate Associations between Dispositional Negativity Scores and Study 2 Negatively Valenced EMA Summary Scores
+
+```{r S1_SuppFXb, message=FALSE, fig.height=7, fig.width=7}
+# For association between DN and negative event ratings
+DN_NegEvnt_prop_reg <- regression(supp_descrip_study2, "DN", "NE_prop")
+
+g1 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = NE_prop))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Relative Frequency of Negative Events", 
+       x = "Standardized DN Scores", 
+       title = "Frequency of Negative Events\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_NegEvnt_prop_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(0, 1, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(0, 1)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and combined negative mood ratings (anxious + depressed mood items)
+DN_NegMood_rtg_reg <- regression(supp_descrip_study2, "DN", "NA_mean")
+
+g2 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = NA_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Negative Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Negative Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_NegMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and anxious mood ratings
+DN_AnxMood_rtg_reg <- regression(supp_descrip_study2, "DN", "ANX_mean")
+
+g3 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = ANX_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Anxious Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Anxious Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_AnxMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and depressed mood ratings
+DN_DepMood_rtg_reg <- regression(supp_descrip_study2, "DN", "DEP_mean")
+
+g4 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = DEP_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Depressed Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Depressed Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_DepMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# Combining plots and adding marginal historgrams for added information
+cowplot::plot_grid(ggExtra::ggMarginal(g1, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g2, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g3, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g4, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"),
+                   ncol = 2, 
+                   labels = c("A", "B", "C", "D"))
+```
+*Note*. DN = Dispositional Negativity. The top histogram is effectiely repeated across each plot. The top row displays the association between dispositional negativity scores and participants' relative frequency of reporting a negative event in plot **A** and the association between dispositional negativity and participants' mean negative momentary mood ratings in panel **B** (a combination of *anxious* and *depressed* items). The same associations are presented in panels **C** and **D** but for the separate *anxious* and *depressed* mood averages. 
+
+## Supplemental Figure SX - Bivariate Associations between Dispositional Negativity Scores and Study 2 Positively Valenced EMA Summary Scores
+
+```{r S1_SuppFXc, message=FALSE, fig.height=7, fig.width=7}
+# For association between DN and negative event ratings
+DN_PosEvnt_prop_reg <- regression(supp_descrip_study2, "DN", "PE_prop")
+
+g1 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = PE_prop))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Relative Frequency of Positive Events", 
+       x = "Standardized DN Scores", 
+       title = "Frequency of Positive Events\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_PosEvnt_prop_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(0, 1, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(0, 1)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and combined negative mood ratings (anxious + depressed mood items)
+DN_PosMood_rtg_reg <- regression(supp_descrip_study2, "DN", "PA_mean")
+
+g2 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = PA_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Positive Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Positive Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_PosMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and anxious mood ratings
+DN_JoyMood_rtg_reg <- regression(supp_descrip_study2, "DN", "JOY_mean")
+
+g3 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = JOY_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Cheerful Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Cheerful Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_JoyMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and depressed mood ratings
+DN_CalmMood_rtg_reg <- regression(supp_descrip_study2, "DN", "CALM_mean")
+
+g4 <- ggplot(data = supp_descrip_study2, 
+           aes(x = DN, 
+               y = CALM_mean))+
+  geom_point(alpha = .75, color = "#ffd520")+
+  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  labs(y = "Mean Calm Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Calm Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_CalmMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.2, 2.2, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# Combining plots and adding marginal historgrams for added information
+cowplot::plot_grid(ggExtra::ggMarginal(g1, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g2, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g3, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"), 
+                   ggExtra::ggMarginal(g4, 
+                                       type = "histogram",
+                                       fill = "#ffd520", 
+                                       color = "#E03a3e"),
+                   ncol = 2, 
+                   labels = c("A", "B", "C", "D"))
+```
+*Note*. DN = Dispositional Negativity. The top histogram is effectiely repeated across each plot. The top row displays the association between dispositional negativity scores and participants' relative frequency of reporting a negative event in plot **A** and the association between dispositional negativity and participants' mean negative momentary mood ratings in panel **B** (a combination of *anxious* and *depressed* items). The same associations are presented in panels **C** and **D** but for the separate *anxious* and *depressed* mood averages. 
+
+\pagebreak
+
 ## Supplemental Figure S4 - Scree Plots of Split Half Principal Components Analysis for Study 2 Momentary Mood Items
 ```{r S2_SuppF4}
 ev1 <- eigen(cor(dat.EFA[,3:17])) # get eigenvalues
@@ -158,31 +554,36 @@ plot_samp1<-data.frame(Component = 1:ncol(dat.EFA[,3:17]),
                        Eigenvalue = nS1$Analysis$Eigenvalues, 
                        Horns_PA = nS1$Analysis$Par.Analysis)
 
-g1<-ggplot(data = plot_samp1)+
-  geom_point(aes(x = Component, y = Eigenvalue, color = "Obtained Eigenvalues"), pch=16, size = 1.5)+
-  geom_line(aes(x = Component, y = Eigenvalue, color = "Obtained Eigenvalues"))+
-  geom_point(aes(x = Component, y = Horns_PA, color = "Horn's Parallel Analysis"), pch=17, size = 1.5)+
-  geom_line(aes(x = Component, y = Horns_PA, color = "Horn's Parallel Analysis"))+
-  scale_color_manual(values = c("Horn's Parallel Analysis" = "#ffd520", "Obtained Eigenvalues" = "#E03a3e"), 
-                     name = "")+
-  theme_bw()+
-  ggtitle(paste0("Split Half Sample 1 (", nrow(dat.EFA), " Observations)"))
-g1
+plot_samp1 %>% 
+  dplyr::select(Component, Eigenvalue, Horns_PA) %>% 
+  gather(key = "Eigenvalue_src", value = "Eigenvalue", Eigenvalue, Horns_PA) %>%
+  mutate(Eigenvalue_src = recode(Eigenvalue_src, "Eigenvalue"="Obtained Eigenvalues", 
+                                 "Horns_PA"="Horn's Parallel Analysis")) %>% 
+  ggplot(aes(group = Eigenvalue_src, x = Component, y = Eigenvalue, color = Eigenvalue_src, 
+             shape = Eigenvalue_src)) +
+  geom_point(size = 1.5) +
+  geom_line() + 
+  scale_color_manual(values = c("Horn's Parallel Analysis" = "#ffd520", 
+                                "Obtained Eigenvalues" = "#E03a3e"), name = "") +
+  scale_shape_manual(values = c("Horn's Parallel Analysis" = 17, 
+                                "Obtained Eigenvalues" = 16), name = "") +
+  labs(title = paste0("Split Half Sample 1 (", nrow(dat.EFA), " Observations)")) +
+  theme_bw()
 ```
 
-Results from the split-half parallel analysis support retention of four factors using the 95th percentile values generated from randomly generated uncorrelated data. 
+Results from the split-half parallel analysis support retention of four factors using the 95th percentile values from randomly generated uncorrelated data with equivalent dimensionality.
 
 \pagebreak
 
 ## Supplemental Figure S5 - Histograms and Density Overlays of Study 2 Momentary Mood Composites and *a priori* Proposed Facets
 
 ```{r S2_SuppF5}
-#Negative Composite
-h <- 2 * IQR(na.omit(dat.study2$NEG)) / length(na.omit(dat.study2$NEG))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$NEG))$x, 
-                 Density = density(na.omit(dat.study2$NEG))$y)
+# Negative Composite
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$NEG)) / length(na.omit(supp_Mood_comps_study2$NEG))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$NEG))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$NEG))$y)
 g_Neg<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=NEG, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -194,13 +595,13 @@ g_Neg<-ggplot()+
   ylab('Density')+
   xlab('Negative Mood Ratings')
 
-#Positive Composite
-h <- 2 * IQR(na.omit(dat.study2$POS)) / length(na.omit(dat.study2$POS))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$POS))$x, 
-                 Density = density(na.omit(dat.study2$POS))$y)
+# Positive Composite
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$POS)) / length(na.omit(supp_Mood_comps_study2$POS))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$POS))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$POS))$y)
 
 g_Pos<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=POS, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -212,13 +613,13 @@ g_Pos<-ggplot()+
   ylab('Density')+
   xlab('Positive Mood Ratings')
 
-#Anxious Mood Ratings
-h <- 2 * IQR(na.omit(dat.study2$ANX)) / length(na.omit(dat.study2$ANX))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$ANX))$x, 
-                 Density = density(na.omit(dat.study2$ANX))$y)
+# Anxious Mood Ratings
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$ANX)) / length(na.omit(supp_Mood_comps_study2$ANX))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$ANX))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$ANX))$y)
 
 g_Anx<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=ANX, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -230,14 +631,14 @@ g_Anx<-ggplot()+
   ylab('Density')+
   xlab('Anxious Mood Ratings')
 
-#Depressed Mood Ratings
-#Had to expand to 20% - 80% to find acceptable binwidth (IQR was 0 - such little variability...)
-h <- 2 * (quantile(dat.study2$DEP, .80, na.rm = TRUE) - quantile(dat.study2$DEP, .20, na.rm = TRUE))/length(na.omit(dat.study2$DEP))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$DEP))$x, 
-                 Density = density(na.omit(dat.study2$DEP))$y)
+# Depressed Mood Ratings
+# Had to expand to 20% - 80% to find acceptable binwidth (IQR was 0 - such little variability...)
+h <- 2 * (quantile(supp_Mood_comps_study2$DEP, .80, na.rm = TRUE) - quantile(supp_Mood_comps_study2$DEP, .20, na.rm = TRUE))/length(na.omit(supp_Mood_comps_study2$DEP))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$DEP))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$DEP))$y)
 
 g_Dep<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=DEP, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -249,13 +650,13 @@ g_Dep<-ggplot()+
   ylab('Density')+
   xlab('Depressed Mood Ratings')
 
-#Joyous Mood Ratings
-h <- 2 * IQR(na.omit(dat.study2$JOY)) / length(na.omit(dat.study2$JOY))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$JOY))$x, 
-                 Density = density(na.omit(dat.study2$JOY))$y)
+# Joyous Mood Ratings
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$JOY)) / length(na.omit(supp_Mood_comps_study2$JOY))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$JOY))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$JOY))$y)
 
 g_Joy<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=JOY, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -267,13 +668,13 @@ g_Joy<-ggplot()+
   ylab('Density')+
   xlab('Joyous Mood Ratings')
 
-#Calm Mood Ratings
-h <- 2 * IQR(na.omit(dat.study2$CALM)) / length(na.omit(dat.study2$CALM))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$CALM))$x, 
-                 Density = density(na.omit(dat.study2$CALM))$y)
+# Calm Mood Ratings
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$CALM)) / length(na.omit(supp_Mood_comps_study2$CALM))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$CALM))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$CALM))$y)
 
 g_Calm<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=CALM, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -285,13 +686,13 @@ g_Calm<-ggplot()+
   ylab('Density')+
   xlab('Calm Mood Ratings')
 
-#Angry Mood 
-h <- 2 * IQR(na.omit(dat.study2$ANG)) / length(na.omit(dat.study2$ANG))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$ANG))$x, 
-                 Density = density(na.omit(dat.study2$ANG))$y)
+# Angry Mood 
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$ANG)) / length(na.omit(supp_Mood_comps_study2$ANG))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$ANG))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$ANG))$y)
 
 g_Angry<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=ANG, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -303,13 +704,13 @@ g_Angry<-ggplot()+
   ylab('Density')+
   xlab('Angry Mood Ratings')
 
-#Tried Mood
-h <- 2 * IQR(na.omit(dat.study2$TRD)) / length(na.omit(dat.study2$TRD))^(1/3)
-dens<-data.frame(x = density(na.omit(dat.study2$TRD))$x, 
-                 Density = density(na.omit(dat.study2$TRD))$y)
+# Tired Mood
+h <- 2 * IQR(na.omit(supp_Mood_comps_study2$TRD)) / length(na.omit(supp_Mood_comps_study2$TRD))^(1/3)
+dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$TRD))$x, 
+                 Density = density(na.omit(supp_Mood_comps_study2$TRD))$y)
 
 g_Tired<-ggplot()+
-  geom_histogram(data = dat.study2, 
+  geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=TRD, y=..density..), 
                  binwidth = h, 
                  fill='#ffd520')+
@@ -326,21 +727,21 @@ cowplot::plot_grid(g_Neg, g_Pos, g_Tired, g_Anx, g_Joy, g_Angry, g_Dep, g_Calm, 
                    ncol = 3)
 ```
 
-In the first column of the combined plot (i.e., Panels A, D, and G), the negative mood composite derived from the split half factor analysis results, and two *a priori* facets designed to tap anxious and depressed momentary mood. The second column of plots (i.e., Panels B, E, and H) display similar composites and facets in our momentary measures of positive affect. The third and final column (i.e., Panels C and F) display the distributions of momentary tired and angry mood ratings. 
+The first column of the plot (i.e., Panels A, D, and G) contains the negative mood composite derived from the split half factor analysis results, and two *a priori* facets designed to tap anxious and depressed momentary mood. The second column (i.e., Panels B, E, and H) displays similar composites and facets in our momentary measures of positive affect. The third and final column (i.e., Panels C and F) display the distributions of momentary tired and angry mood ratings. 
 
 \pagebreak
 
 # Supplemental Figure S6 - Correlations, Univariate, and Bivariate Distributions of Study 2 Momentary Mood Composites and Facets
 
-```{r S2_SuppF6}
-psych::pairs.panels(dat.study2[,c("NEG", "ANX", "DEP", "ANG", "TRD", "POS", "JOY", "CALM")])
+```{r S2_SuppF6, fig.height=7, fig.width=7}
+psych::pairs.panels(supp_Mood_comps_study2[,c("NEG", "ANX", "DEP", "ANG", "TRD", "POS", "JOY", "CALM")])
 ```
 
 \pagebreak
 
 ## Supplemental Analysis - Initial and Final Confirmatory Factor Analysis Models
 
-These analyses were conducted on a subset of momentary mood items taken from the second half of the data (exploratory analyses were performed on the first half of the randomly split data set). Analyses were performed using a multilevel confirmatory factor analysis approach in *lavaan* (CITE). Latent factors were allowed to correlate (i.e., an orthogonal structure was not assumed). 
+We analyzed a subset of momentary mood items taken from the second half of study 2 participants. We performed an exploratory factor analysis on the first half of the randomly split data set. Given the nested structure of the data we employed a multilevel confirmatory factor analysis approach in *lavaan* (CITE). Latent factors were allowed to correlate (i.e., an orthogonal structure was not assumed). 
 
 The initial model include no item-level covariances either at the within-subject or the between-subject levels of the model. The final model included within-subject covariances for items loading on the separate positive and negative mood facets. There were also two error covariances added at the between-subjects level of the model. Standardized model summaries are available on the next two pages. The `Std.all` contains the standardized values for each parameter. Readers are most likely interested in the `Latent Variables:` tables in the output at each level of the model.  
 
@@ -419,10 +820,15 @@ summary(fit.CFA11,
 
 ### Comparing Model Fit:
 
-For the sake of completeness, a test of model improvement from model 1 to model 11 is presented below. The reason for 11 models is that modifications were used as a partial guide in determining the appropriateness of adding certain error covariances. 
+For the sake of completeness, a test of model improvement from model 1 to model 11 is presented below. The reason for 11 models is that we used modifications indices as a partial guide in determining the appropriateness of adding certain error covariances. 
 
 ```{r SuppAn3, message=FALSE}
 anova(fit.CFA, fit.CFA11)
 ```
 
-Note that this is not an exhaustive test of the factor structure of these momentary mood items. There are certainly other reasonable model structures that were not tested here, especially considering the various ways one could specify the between-subjects and within-subjects models. Thus, we are not of the opinion that this factor structure represents the "true" properties of our momentary mood items. Instead, we see these analyses as a relatively robust effort to develop an appropriate measurement model for the set of mood items we collected during our EMA surveys.  
+Note that this is not an exhaustive test of the factor structure of these momentary mood items. There are certainly other reasonable model structures that were not tested here, especially considering the various ways one could specify the between-subjects and within-subjects models. Caveats aside, we see these analyses as a relatively robust effort to develop an appropriate measurement model for the set of mood items we collected during our EMA surveys.   
+
+\pagebreak
+
+# References
+Rosseel, Y. (2012). `lavaan`: An R package for structural equation modeling. *Journal of Statistical Software, 48*, 1-36. doi:  	10.18637/jss.v048.i02
