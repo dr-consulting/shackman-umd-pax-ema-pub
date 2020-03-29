@@ -38,52 +38,23 @@ options(mc.cores = parallel::detectCores())
 #--------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
-user<-ifelse(Sys.getenv("USERPROFILE")=="", "~", Sys.getenv("USERPROFILE"))
-wd<-paste0(user, '/Dropbox/UMD/Shackman Lab/EMA_MS')
+# Location of repo stored locally
+wd<-paste0('~/dr-consulting_GH/shackman-umd-pax-ema-pub')
 data.folder<-paste0(wd, '/Data')
-study1.out<-paste0(wd, '/Study 1 output')
-study1.graphics<-paste0(study1.out, '/Graphics')
-study1.model<-paste0(study1.out, '/Model summaries')
-stan.code<-paste0(wd, '/Stan_code')
-EDA.folder<-paste0(study1.out, '/EDA')
+study1.model<-paste0(wd, '/Study1_model_summaries')
+
+# Will save very large posterior files from analyses (not recommended for git repo)
+# For anyone attempting to reproduce these analyses be sure to identify a storage location with sufficient memory
+posterior_save_dir <- "/media/matthew/My Book"
+study1.out<-paste0(posterior_save_dir, '/EMA_S1_Bayesian_Posteriors')
+
+# Also generally not recommended to store image files on GH... 
+study1.graphics<-paste0(posterior_save_dir, '/EMA_S1_Graphics')
 #--------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
 # Loading Study 1 Data (from Emotion MS - Shackman et al. 2017)
-load(paste0(data.folder, '/Emotion MS environment.RData'))
-
-dat.study1_lv1 <- dat %>% 
-  transmute(ID = subid,
-            NEG = MAFS_NA, 
-            POS = MAFS_PA,
-            orig.DN = ZAP_Both,
-            NegEvnt = WorstEvent_Neg,
-            PosEvnt = BestEvent_Pos,
-            SocMotvtn = WantToBeWithPeople, 
-            AlnMotvtn = WantToBeAlone, 
-            Probe = ProbeNum, 
-            Chrfl = PA_Cheerful, 
-            Hppy = PA_Happy, 
-            Jyfl = PA_Joyful, 
-            Nrvs = NA_Nervous, 
-            Anxs = NA_Anxious, 
-            Unesy = NA_Uneasy)
-
-dat.study1_lv2 <- dat.study1_lv1 %>% 
-  group_by(ID) %>% 
-  summarize(c.DN = mean(orig.DN),
-            m.NegEvnt = mean(NegEvnt, na.rm = TRUE), 
-            m.PosEvnt = mean(PosEvnt, na.rm = TRUE), 
-            sd.NegEvnt = sd(NegEvnt, na.rm = TRUE), 
-            sd.PosEvnt = sd(PosEvnt, na.rm = TRUE),
-            m.NEG = mean(NEG, na.rm = TRUE), 
-            m.POS = mean(POS, na.rm = TRUE), 
-            sd.NEG = sd(NEG, na.rm = TRUE), 
-            sd.POS = sd(POS, na.rm = TRUE)) 
-
-dat.study1_model <- merge(dat.study1_lv1, dat.study1_lv2, by = "ID")
-dat.study1_model$c.NegEvnt <- dat.study1_model$NegEvnt - dat.study1_model$m.NegEvnt
-dat.study1_model$c.PosEvnt <- dat.study1_model$PosEvnt - dat.study1_model$m.PosEvnt
+load(paste0(data.folder, '/study1_data.RData'))
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 # Missing data models - incorporating information about individual distributions of EMA data
@@ -151,7 +122,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_ucm.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_ucm.RData"), 
      list=c("S1_NEG_ucm", "S1_NEG_ucm_form"))
 remove(list=c("S1_NEG_ucm", "S1_NEG_ucm_form"))
 gc()
@@ -210,7 +181,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_NegEvnt.RData"), 
      list=c("S1_NEG_NegEvnt", "S1_NEG_NegEvnt_form"))
 remove(list=c("S1_NEG_NegEvnt", "S1_NEG_NegEvnt_form"))
 gc()
@@ -264,7 +235,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_PosEvnt.RData"), 
      list=c("S1_NEG_PosEvnt", "S1_NEG_PosEvnt_form"))
 remove(list=c("S1_NEG_PosEvnt", "S1_NEG_PosEvnt_form"))
 gc()
@@ -321,7 +292,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_lv1.RData"), 
      list=c("S1_NEG_lv1", "S1_NEG_lv1_form"))
 remove(list=c("S1_NEG_lv1", "S1_NEG_lv1_form"))
 gc()
@@ -378,7 +349,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_DN.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_NegEvnt_DN.RData"), 
      list=c("S1_NEG_NegEvnt_DN", "S1_NEG_NegEvnt_DN_form"))
 remove(list=c("S1_NEG_NegEvnt_DN", "S1_NEG_NegEvnt_DN_form"))
 gc()
@@ -437,7 +408,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_DN.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_PosEvnt_DN.RData"), 
      list=c("S1_NEG_PosEvnt_DN", "S1_NEG_PosEvnt_DN_form"))
 remove(list=c("S1_NEG_PosEvnt_DN", "S1_NEG_PosEvnt_DN_form"))
 gc()
@@ -497,7 +468,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_DN.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_lv1_DN.RData"), 
      list=c("S1_NEG_lv1_DN", "S1_NEG_lv1_DN_form"))
 remove(list=c("S1_NEG_lv1_DN", "S1_NEG_lv1_DN_form"))
 gc()
@@ -553,7 +524,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_Exp.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_NegEvnt_Exp.RData"), 
      list=c("S1_NEG_NegEvnt_Exp", "S1_NEG_NegEvnt_Exp_form"))
 remove(list=c("S1_NEG_NegEvnt_Exp", "S1_NEG_NegEvnt_Exp_form"))
 gc()
@@ -610,7 +581,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_Exp.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_PosEvnt_Exp.RData"), 
      list=c("S1_NEG_PosEvnt_Exp", "S1_NEG_PosEvnt_Exp_form"))
 remove(list=c("S1_NEG_PosEvnt_Exp", "S1_NEG_PosEvnt_Exp_form"))
 gc()
@@ -670,7 +641,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_Exp.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_lv1_Exp.RData"), 
      list=c("S1_NEG_lv1_Exp", "S1_NEG_lv1_Exp_form"))
 remove(list=c("S1_NEG_lv1_Exp", "S1_NEG_lv1_Exp_form"))
 gc()
@@ -727,7 +698,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_DN_Exp.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_NegEvnt_DN_Exp.RData"), 
      list=c("S1_NEG_NegEvnt_DN_Exp", "S1_NEG_NegEvnt_DN_Exp_form"))
 remove(list=c("S1_NEG_NegEvnt_DN_Exp", "S1_NEG_NegEvnt_DN_Exp_form"))
 gc()
@@ -784,7 +755,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_DN_Exp.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_PosEvnt_DN_Exp.RData"), 
      list=c("S1_NEG_PosEvnt_DN_Exp", "S1_NEG_PosEvnt_DN_Exp_form"))
 remove(list=c("S1_NEG_PosEvnt_DN_Exp", "S1_NEG_PosEvnt_DN_Exp_form"))
 gc()
@@ -844,7 +815,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_DN_Exp.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_lv1_DN_Exp.RData"), 
      list=c("S1_NEG_lv1_DN_Exp", "S1_NEG_lv1_DN_Exp_form"))
 remove(list=c("S1_NEG_lv1_DN_Exp", "S1_NEG_lv1_DN_Exp_form"))
 gc()
@@ -901,7 +872,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_Rct.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_NegEvnt_Rct.RData"), 
      list=c("S1_NEG_NegEvnt_Rct", "S1_NEG_NegEvnt_Rct_form"))
 remove(list=c("S1_NEG_NegEvnt_Rct", "S1_NEG_NegEvnt_Rct_form"))
 gc()
@@ -1015,7 +986,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_Rct.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_lv1_Rct.RData"), 
      list=c("S1_NEG_lv1_Rct", "S1_NEG_lv1_Rct_form"))
 remove(list=c("S1_NEG_lv1_Rct", "S1_NEG_lv1_Rct_form"))
 gc()
@@ -1074,7 +1045,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_NegEvnt_Flr.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_NegEvnt_Flr.RData"), 
      list=c("S1_NEG_NegEvnt_Flr", "S1_NEG_NegEvnt_Flr_form"))
 remove(list=c("S1_NEG_NegEvnt_Flr", "S1_NEG_NegEvnt_Flr_form"))
 gc()
@@ -1129,7 +1100,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_PosEvnt_Flr.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_PosEvnt_Flr.RData"), 
      list=c("S1_NEG_PosEvnt_Flr", "S1_NEG_PosEvnt_Flr_form"))
 remove(list=c("S1_NEG_PosEvnt_Flr", "S1_NEG_PosEvnt_Flr_form"))
 gc()
@@ -1188,7 +1159,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 
-save(file=paste0(study1.out, "/Posteriors/S1_NEG_lv1_Flr.RData"), 
+save(file=paste0(study1.out, "/S1_NEG_lv1_Flr.RData"), 
      list=c("S1_NEG_lv1_Flr", "S1_NEG_lv1_Flr_form"))
 remove(list=c("S1_NEG_lv1_Flr", "S1_NEG_lv1_Flr_form"))
 gc()

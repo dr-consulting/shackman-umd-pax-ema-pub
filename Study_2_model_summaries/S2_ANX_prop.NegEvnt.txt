@@ -1,0 +1,24 @@
+ Family: lognormal 
+  Links: mu = identity; sigma = identity 
+Formula: ANX ~ 1 + prop.NegEvnt + (1 | ID) 
+   Data: dat.study2_list (Number of observations: 13440) 
+Samples: 30 chains, each with iter = 25000; warmup = 20000; thin = 1;
+         total post-warmup samples = 150000
+
+Group-Level Effects: 
+~ID (Number of levels: 240) 
+              Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sd(Intercept)  0.23252   0.01108  0.21185  0.25538 1.00355    11056    23809
+
+Population-Level Effects: 
+             Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+Intercept     0.21020   0.02315  0.16504  0.25560 1.01363     3638    13561
+prop.NegEvnt  0.67879   0.16069  0.36109  0.99476 1.01412     3209    13818
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma  0.31770   0.00366  0.31095  0.32415 1.74317       45      210
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).
