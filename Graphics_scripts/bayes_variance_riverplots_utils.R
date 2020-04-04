@@ -162,6 +162,10 @@ clustermeancentered=TRUE
 r2MLM_wrapper <- function(data, within_covs, between_covs, random_covs, focal_model, null_model,
                           has_intercept=TRUE, clustermeancentered=TRUE, m=NULL, link_func=NULL){
   
+  # First extract the appropriate posterior samples:
+  posterior_df <- posterior_samples_extractor(null_model, focal_model, link_func)
+  
+  
 }
 
 focal_model <- S2_ANX_NegEvnt_x_DN_prop.NegEvnt
@@ -220,29 +224,31 @@ posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL)
 
 test <- posterior_samples_extractor(S2_ANX_ucm, S2_ANX_NegEvnt_x_DN_prop.NegEvnt, link_func = "log")
 
-posterior_r2mlm_draws <- function(data, posterior_df){
-  grep()
+posterior_r2mlm_draws <- function(data, posterior_df, between_vars, within_vars, random_vars){
+  # Note need to create and label interaction function outside of this and pass names in correct locations
+  # May need some ifelse logic here 
+  within_vars_cols <- match(within_vars, colnames(data))
+  between_vars_cols <- match(between_vars, colnames(data))
+  random_vars_cols <- match(random_vars_cols, colnames(data))
+  
+  # Need to add in the Intercept if present (defuault will be TRUE for top function)
+  if(has_intercept){
+    between_vars <- c("b_Intercept", between_vars)
+  }
+  
   if(class(data)  == "data.frame"){
     foreach(r = 1:nrow(posterior_df)) %dopar% {
+      gamma_w <- posterior_df[r, within_vars]
+      gamma_b <- posterior_df[r, between_vars]
+      sigma <- posterior_df[r, "Sigma"]
+      
+      # Creating the tau matrix for the model: 
       
     }
   }
   
   
 }
-
-create_sampling_list(M, iter, n_chains){
-  sampling_list <- list()
-  for(m in 1:M){
-    if(m == 1){
-      sampling_list[[paste0("imp", m)]] <- 1:(iter*n_chains)
-    }
-    else{
-      sampling_list[[paste0("imp", m)]] <- 1:(iter*n_chains) + iter*n_chains*m
-    }
-  }
-}
-
 
 
 lognormal_link_func <- function(beta_00, sigma_samples){
