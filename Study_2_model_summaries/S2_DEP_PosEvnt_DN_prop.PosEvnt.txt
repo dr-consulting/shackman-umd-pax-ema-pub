@@ -1,0 +1,32 @@
+ Family: lognormal 
+  Links: mu = identity; sigma = identity 
+Formula: DEP ~ 1 + c.PosEvnt + c.DN + prop.PosEvnt + (1 + c.PosEvnt | ID) 
+   Data: dat.study2_list (Number of observations: 13440) 
+Samples: 30 chains, each with iter = 25000; warmup = 20000; thin = 1;
+         total post-warmup samples = 150000
+
+Group-Level Effects: 
+~ID (Number of levels: 240) 
+                         Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS
+sd(Intercept)             0.19202   0.00926  0.17486  0.21123 1.00835    14430
+sd(c.PosEvnt)             0.06039   0.00906  0.04285  0.07829 1.06461      271
+cor(Intercept,c.PosEvnt) -0.74707   0.10675 -0.93616 -0.52420 1.10493      172
+                         Tail_ESS
+sd(Intercept)               36345
+sd(c.PosEvnt)                1052
+cor(Intercept,c.PosEvnt)      900
+
+Population-Level Effects: 
+             Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+Intercept     0.14496   0.02031  0.10527  0.18491 1.02227      960    10369
+c.PosEvnt    -0.07341   0.00829 -0.08964 -0.05719 1.12477      146      652
+c.DN          0.05686   0.01217  0.03291  0.08075 1.03419      561     3696
+prop.PosEvnt  0.03209   0.06032 -0.08587  0.15125 1.02349      922    12137
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma  0.27412   0.00393  0.26687  0.28119 2.14529       38      141
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).

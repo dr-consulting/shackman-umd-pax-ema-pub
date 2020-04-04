@@ -1,0 +1,24 @@
+ Family: lognormal 
+  Links: mu = identity; sigma = identity 
+Formula: JOY ~ 1 + prop.PosEvnt + (1 | ID) 
+   Data: dat.study2_list (Number of observations: 13440) 
+Samples: 30 chains, each with iter = 25000; warmup = 20000; thin = 1;
+         total post-warmup samples = 150000
+
+Group-Level Effects: 
+~ID (Number of levels: 240) 
+              Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sd(Intercept)  0.31357   0.01492  0.28592  0.34438 1.00736     8353    14699
+
+Population-Level Effects: 
+             Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+Intercept     0.50277   0.03414  0.43550  0.56979 1.01175     5395    12046
+prop.PosEvnt  0.61247   0.10354  0.40911  0.81612 1.01073     5328    13358
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma  0.37287   0.00598  0.36389  0.38684 2.19039       38       64
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).

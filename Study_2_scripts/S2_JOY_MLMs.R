@@ -37,20 +37,24 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 #---------------------------------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------------------------------
-user<-ifelse(Sys.getenv("USERPROFILE")=="", "~", Sys.getenv("USERPROFILE"))
-wd<-paste0(user, '/Dropbox/UMD/Shackman Lab/EMA_MS')
+#--------------------------------------------------------------------------------------------------
+# Location of repo stored locally
+wd<-paste0('~/dr-consulting_GH/shackman-umd-pax-ema-pub')
 data.folder<-paste0(wd, '/Data')
-study2.out<-paste0(wd, '/Study 2 output')
-study2.graphics<-paste0(study2.out, '/Graphics')
-study2.model<-paste0(study2.out, '/Model summaries')
-stan.code<-paste0(wd, '/Stan_code')
-EDA.folder<-paste0(study2.out, '/EDA')
-#---------------------------------------------------------------------------------------------------
+study2.model<-paste0(wd, '/Study2_model_summaries')
 
-#---------------------------------------------------------------------------------------------------
-# Loading Study 2 data with imputed values
-load(paste0(data.folder, '/Study2_Clean_w_Impute.RData'))
+# Will save very large posterior files from analyses (not recommended for git repo)
+# For anyone attempting to reproduce these analyses be sure to identify a storage location with sufficient memory
+posterior_save_dir <- "/media/matthew/My Book"
+study2.out<-paste0(posterior_save_dir, '/EMA_S2_Bayesian_Posteriors')
+
+# Also generally not recommended to store image files on GH... 
+study2.graphics<-paste0(posterior_save_dir, '/EMA_S2_Graphics')
+#--------------------------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------------------------
+# Loading data from study 2 - PAX
+load(paste0(data.folder, '/study2_data.RData'))
 
 dat.study2_list_stacked <- data.frame()
 for(m in 1:M)  # Assumes M is still defined in the imputed data environment loaded from .RData
@@ -137,7 +141,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_ucm', 'S2_JOY_ucm_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_ucm.RData')
+     file = paste0(study2.out, "/S2_JOY_ucm.RData"))
 remove(S2_JOY_ucm)
 gc()
 
@@ -189,7 +193,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_DN', 'S2_JOY_DN_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_DN.RData')
+     file = paste0(study2.out, "/S2_JOY_DN.RData"))
 remove(S2_JOY_DN)
 gc()
 
@@ -240,7 +244,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_prop.NegEvnt', 'S2_JOY_prop.NegEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_prop.NegEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_prop.NegEvnt.RData"))
 remove(S2_JOY_prop.NegEvnt)
 gc()
 
@@ -291,7 +295,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_prop.PosEvnt', 'S2_JOY_prop.PosEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_prop.PosEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_prop.PosEvnt.RData"))
 remove(S2_JOY_prop.PosEvnt)
 gc()
 
@@ -344,7 +348,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_DN_prop.NegEvnt', 'S2_JOY_DN_prop.NegEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_DN_prop.NegEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_DN_prop.NegEvnt.RData"))
 remove(S2_JOY_DN_prop.NegEvnt)
 gc()
 
@@ -397,7 +401,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_DN_prop.PosEvnt', 'S2_JOY_DN_prop.PosEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_DN_prop.PosEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_DN_prop.PosEvnt.RData"))
 remove(S2_JOY_DN_prop.PosEvnt)
 gc()
 
@@ -452,7 +456,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_NegEvnt', 'S2_JOY_NegEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_NegEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_NegEvnt.RData"))
 remove(S2_JOY_NegEvnt)
 gc()
 
@@ -505,7 +509,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_PosEvnt', 'S2_JOY_PosEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_PosEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_PosEvnt.RData"))
 remove(S2_JOY_PosEvnt)
 gc()
 
@@ -558,7 +562,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_NegEvnt_DN', 'S2_JOY_NegEvnt_DN_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_NegEvnt_DN.RData')
+     file = paste0(study2.out, "/S2_JOY_NegEvnt_DN.RData"))
 remove(S2_JOY_NegEvnt_DN)
 gc()
 
@@ -610,7 +614,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_PosEvnt_DN', 'S2_JOY_PosEvnt_DN_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_PosEvnt_DN.RData')
+     file = paste0(study2.out, "/S2_JOY_PosEvnt_DN.RData"))
 remove(S2_JOY_PosEvnt_DN)
 gc()
 
@@ -663,7 +667,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_NegEvnt_prop.NegEvnt', 'S2_JOY_NegEvnt_prop.NegEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_NegEvnt_prop.NegEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_NegEvnt_prop.NegEvnt.RData"))
 remove(S2_JOY_NegEvnt_prop.NegEvnt)
 gc()
 
@@ -716,7 +720,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_PosEvnt_prop.PosEvnt', 'S2_JOY_PosEvnt_prop.PosEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_PosEvnt_prop.PosEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_PosEvnt_prop.PosEvnt.RData"))
 remove(S2_JOY_PosEvnt_prop.PosEvnt)
 gc()
 
@@ -768,7 +772,7 @@ cowplot::plot_grid(ppc_hist,
 dev.off()
 
 save(list = c('S2_JOY_NegEvnt_DN_prop.NegEvnt', 'S2_JOY_NegEvnt_DN_prop.NegEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_NegEvnt_DN_prop.NegEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_NegEvnt_DN_prop.NegEvnt.RData"))
 remove(S2_JOY_NegEvnt_DN_prop.NegEvnt)
 gc()
 
@@ -821,7 +825,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_PosEvnt_DN_prop.PosEvnt', 'S2_JOY_PosEvnt_DN_prop.PosEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_PosEvnt_DN_prop.PosEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_PosEvnt_DN_prop.PosEvnt.RData"))
 remove(S2_JOY_PosEvnt_DN_prop.PosEvnt)
 gc()
 
@@ -873,7 +877,7 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_NegEvnt_x_DN_prop.NegEvnt', 'S2_JOY_NegEvnt_x_DN_prop.NegEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_NegEvnt_x_DN_prop.NegEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_NegEvnt_x_DN_prop.NegEvnt.RData"))
 remove(S2_JOY_NegEvnt_DN_prop.NegEvnt)
 gc()
 
@@ -925,6 +929,6 @@ dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_JOY_PosEvnt_x_DN_prop.PosEvnt', 'S2_JOY_PosEvnt_x_DN_prop.PosEvnt_form'),
-     file = '/media/matthew/My Book/EMA_S2_Bayesian_Posteriors/S2_JOY_PosEvnt_x_DN_prop.PosEvnt.RData')
+     file = paste0(study2.out, "/S2_JOY_PosEvnt_x_DN_prop.PosEvnt.RData"))
 remove(S2_JOY_PosEvnt_x_DN_prop.PosEvnt)
 gc()

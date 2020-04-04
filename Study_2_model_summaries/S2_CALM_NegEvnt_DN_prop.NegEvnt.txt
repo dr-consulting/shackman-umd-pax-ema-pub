@@ -1,0 +1,32 @@
+ Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: CALM ~ 1 + c.NegEvnt + c.DN + prop.NegEvnt + (1 + c.NegEvnt | ID) 
+   Data: dat.study2_list (Number of observations: 13440) 
+Samples: 30 chains, each with iter = 25000; warmup = 20000; thin = 1;
+         total post-warmup samples = 150000
+
+Group-Level Effects: 
+~ID (Number of levels: 240) 
+                         Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS
+sd(Intercept)             0.57611   0.02745  0.52509  0.63249 1.00726    10043
+sd(c.NegEvnt)             0.28493   0.03133  0.22481  0.34781 1.06502      268
+cor(Intercept,c.NegEvnt) -0.26943   0.10309 -0.46587 -0.06241 1.02015      905
+                         Tail_ESS
+sd(Intercept)               24004
+sd(c.NegEvnt)                1110
+cor(Intercept,c.NegEvnt)     9988
+
+Population-Level Effects: 
+             Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+Intercept     2.88502   0.05641  2.77471  2.99540 1.01774     1741    12277
+c.NegEvnt    -0.53360   0.03008 -0.59310 -0.47524 1.04769      360     1176
+c.DN         -0.26924   0.03758 -0.34375 -0.19646 1.00487     6885    14254
+prop.NegEvnt  0.00778   0.38752 -0.75449  0.76261 1.02379     1003    13165
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
+sigma  0.65557   0.00440  0.64706  0.66432 1.08221      211      902
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).
