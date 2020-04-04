@@ -160,73 +160,90 @@ clustermeancentered=TRUE
 #' @param link_func_trans function for transforming level-1 intercept variance (if link function used)
 
 r2MLM_wrapper <- function(data, within_covs, between_covs, random_covs, focal_model, null_model,
-                          has_intercept=TRUE, clustermeancentered=TRUE, m=NULL, link_func_trans=NULL){
+                          has_intercept=TRUE, clustermeancentered=TRUE, m=NULL, link_func=NULL){
+  
+}
+
+focal_model <- S2_ANX_NegEvnt_x_DN_prop.NegEvnt
+
+posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL){
+  # Select out relevant parameters:
+  pars_to_select <- grepl("b_.*", par_vals) + 
+    grepl("sd_ID__.*", par_vals) +
+    grepl("cor_ID__.*", par_vals) +
+    grepl("sigma", par_vals)
+  
+  # Choose only parameters needed for variance calculations
+  par_vals <- par_vals[as.logical(pars_to_select)]
+  posterior_df <- posterior_samples(focal_model, pars=par_vals, add_chain=TRUE)
+  
+  # Create variance/covariance columns for random effects: 
+  ranef_sd_names <- par_vals[grepl("sd_ID__.*", par_vals)]
+  n_ranef <- length(ranef_sd_names)
+  if(n_ranef >= 1){
+    for(i in 1:n_ranef){
+      ranef_var_name <- gsub("sd", "var", ranef_sd_names[i])
+      posterior_df[ranef_var_name] <- posterior_df[ranef_sd_names[i]]^2 
+    }
+  }
+  
+  # Pull out covariance terms
+  ranef_cor_names <- par_vals[grepl("cor_ID__.*", par_vals)]
+  n_ranef_cor <- length(ranef_cor_names)
+  if(n_ranef_cor >= 1){
+    for(i in 1:n_ranef_cor){
+      var1_name <- strsplit(ranef_cor_names[i], split = "__")[[i]][2]
+      var2_name <- strsplit(ranef_cor_names[i], split = "__")[[i]][3]
+      posterior_df[paste("cov_ID", var1_name, var2_name, sep="__")] <- posterior_df[ranef_cor_names[i]]*
+        posterior_df[paste0("sd_ID__", var1_name)]*
+        posterior_df[paste0("sd_ID__", var2_name)]
+    }
+  }
+  
+  # If there is a link function convert as appropriate
+  # Current implementation only allows for a lognormal link function
+  if(!is.null(link_func)){
+    if(link_func == "log"){
+      # Grab unconditional or "null" model intercept
+      beta_00 <- fixef(null_model)[1,1]
+      posterior_df["sigma"] <- lognormal_link_func(beta_00, posterior_df["sigma"])
+    }
+  }
+  
+  final_names <- grepl("b_.*", par_vals) + 
+    grepl("var_ID__.*", par_vals) +
+    grepl("cov_ID__.*", par_vals) +
+    grepl("sigma", par_vals)
+  
+  return(posterior_df[as.logical(final_names)])
+}
+
+test <- posterior_samples_extractor(S2_ANX_ucm, S2_ANX_NegEvnt_x_DN_prop.NegEvnt, link_func = "log")
+
+posterior_r2mlm_draws <- function(data, posterior_df){
+  grep()
+  if(class(data)  == "data.frame"){
+    foreach(r = 1:nrow(posterior_df)) %dopar% {
+      
+    }
+  }
   
   
 }
 
-posterior_samples_extractor <- function(null_model, between_covs=NULL, within_covs=NULL, random_covs=NULL, focal_model, 
-                                        link_func_trans=NULL, has_intercept=TRUE){
-  # Initialize empty data.frame for storing results 
-  posterior_df <- data.frame()
-  
-  # Generates list of between-subjects effects 
-  if(!is.null(between_covs)){
-    
-    # Add intercept to between-subjects fixed effects if has_intercept = TRUE
-    if(has_intercept){
-      between_covs <- c("Intercept", between_covs)
+create_sampling_list(M, iter, n_chains){
+  sampling_list <- list()
+  for(m in 1:M){
+    if(m == 1){
+      sampling_list[[paste0("imp", m)]] <- 1:(iter*n_chains)
     }
-    
-    # Create names and pull posterior samples for between-subjects effects
-    between_covs_names <- paste0("b_", between_covs)
-    for(i in 1:length(between_covs_names)){
-      posterior_df[[paste0("btw_", between_covs[i])]] <- posterior_samples(focal_model, between_covs_names[i])
+    else{
+      sampling_list[[paste0("imp", m)]] <- 1:(iter*n_chains) + iter*n_chains*m
     }
   }
-  
-  # Generates list of within-subjects effects 
-  if(!is.null(within_covs)){
-    
-    # Create names and pull posterior samples for within-subjects effects
-    within_covs_names <- paste0("b_", within_covs)
-    for(i in 1:length(within_covs_names)){
-      posterior_df[[paste0("wthn_", within_covs[i])]] <- posterior_samples(focal_model, within_covs_names[i])
-    }
-  }
-  
-  # Generates fields for random effects covariance matrix
-  if(!is.null(random_covs)){
-    
-    # Pull in intercept if present
-    if(has_intercept){
-      random_covs <- c("Intercept", random_covs)
-    }
-    
-    # Get variances of random effects in model
-    sd_random_covs_names <- paste0("sd_ID__", random_covs)
-    n_random_covs <- length(random_covs)
-    
-    for(i in 1:n_random_covs){
-      posterior_df[[paste0("var_", random_covs[i])]] <- posterior_samples(focal_model, random_covs[i])
-      
-      # Using a try statement to more easily find the correlations 
-      # Thought was to make things easier in terms of ordering of inputs and actual model names
-      tmp <- random_covs[random_covs != random_covs[i]]
-      for(j in (i+1):length(tmp)){
-        try{
-          posterior_df[[paste0("cov_", random_covs[i])]] <- 
-        }
-      }
-    }
-  }
-  
-  posterior_df <- data.frame()
-  
-  # Storing between-subjects fixed effects: 
-  
-  
 }
+
+
 
 lognormal_link_func <- function(beta_00, sigma_samples){
   return(log(1 + sigma_samples/beta_00))
