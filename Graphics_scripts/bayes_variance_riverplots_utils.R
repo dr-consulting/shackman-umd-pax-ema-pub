@@ -170,17 +170,19 @@ r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal
     r2mlm_posterior_samples <- data.frame()
     for(l in 1:length(df)){
       start_time <- Sys.time()
-      print(paste("Initiating draws of posterior variance decompositions for imputed dataset:", l, "\n", 
-                  "Start date and time:", start_time))
+      print(paste("Initiating draws of posterior variance decompositions for imputed dataset:", l))
+      print(paste("Start date and time:", start_time))
+      
       tmp_output <- posterior_r2mlm_draws(df[[l]], posterior_df, between_vars, within_vars, random_vars, has_intercept, 
                                           clustermeancentered)
       tmp_output["imputed_df"] <- l
       r2mlm_posterior_samples <- rbind(r2mlm_posterior_samples)
       
       stop_time <- Sys.time()
-      print(paste("Completed draws for imputed dataset:", l, "out of", length(df), "\n", 
-                  "Total runtime:", round(as.numeric(difftime(start_time, stop_time, units = "min")), 2), "\n", 
-                  "Adjust expectations accordingly"))
+      run_time <- round(as.numeric(difftime(start_time, stop_time, units = "min")), 2)
+      print(paste("Completed draws for imputed dataset:", l, "out of", length(df))) 
+      print(paste("Total runtime:", run_time))
+      print("Adjust expectations accordingly")
     }
   }
   
