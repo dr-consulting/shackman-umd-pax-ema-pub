@@ -169,10 +169,18 @@ r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal
   if(class(df) == "list"){
     r2mlm_posterior_samples <- data.frame()
     for(l in 1:length(df)){
+      start_time <- Sys.time()
+      print(paste("Initiating draws of posterior variance decompositions for imputed dataset:", l, "\n", 
+                  "Start date and time:", start_time))
       tmp_output <- posterior_r2mlm_draws(df[[l]], posterior_df, between_vars, within_vars, random_vars, has_intercept, 
                                           clustermeancentered)
       tmp_output["imputed_df"] <- l
       r2mlm_posterior_samples <- rbind(r2mlm_posterior_samples)
+      
+      stop_time <- Sys.time()
+      print(paste("Completed draws for imputed dataset:", l, "out of", length(df), "\n", 
+                  "Total runtime:", round(as.numeric(difftime(start_time, stop_time, units = "min")), 2), "\n", 
+                  "Adjust expectations accordingly"))
     }
   }
   
@@ -241,25 +249,26 @@ posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL)
 
 posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, random_vars, has_intercept, 
                                   clustermeancentered){
-  browser()
   # Note need to create and label interaction function outside of this and pass names in correct locations
   # May need some ifelse logic here 
-  within_vars_cols <- match(within_vars, colnames(df))
-  between_vars_cols <- match(between_vars, colnames(df))
-  random_vars_cols <- match(random_vars, colnames(df))
-
-  # Need to add in the Intercept if present (defuault will be TRUE for top function)
-  if(has_intercept){
-    between_vars <- c("Intercept", between_vars)
+  if(!is.null(within_vars)){
+    within_vars_cols <- match(within_vars, colnames(df))
+    post_wth_vars <- paste0("b_", within_vars)
   }
   
-  # Could add a check here to make sure that all post_btw_vars are in the posterior_df
-  post_btw_vars <- paste0("b_", between_vars)
-  post_wth_vars <- paste0("b_", within_vars)
+  if(!is.null(between_vars)){
+    between_vars_cols <- match(between_vars, colnames(df))
+  }
   
-  # Creating the tau matrix for the model: 
+  if(!is.null(random_vars)){
+    random_vars_cols <- match(random_vars, colnames(df))
+  }
+  
+  # Need to add in the Intercept if present (defuault will be TRUE for top function)
   if(has_intercept){
     random_vars <- c("Intercept", random_vars)
+    between_vars <- c("Intercept", between_vars)
+    post_btw_vars <- paste0("b_", between_vars)
   }
   
   # Dynamically getting names for Tau matrix variables
