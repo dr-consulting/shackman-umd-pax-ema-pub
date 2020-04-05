@@ -1,5 +1,10 @@
+library(foreach)
+library(miceadds)
+library(brms)
+N_CORES <- parallel::detectCores()-2 # for my workstation this gets me 10 cores
+
 #######################################################################################################################
-# Function below taken from Rights and Sterba
+# r2MLM below created by Rights and Sterba
 # https://my.vanderbilt.edu/jasonrights/software/r2mlm/
 
 r2MLM <- function(data, within_covs ,between_covs, random_covs, gamma_w, gamma_b, Tau, sigma2, has_intercept=TRUE, 
@@ -134,18 +139,16 @@ r2MLM <- function(data, within_covs ,between_covs, random_covs, gamma_w, gamma_b
   return(Output)
 }
 
-data, within_covs ,between_covs, random_covs, gamma_w, gamma_b, Tau, sigma2, has_intercept=TRUE, 
-clustermeancentered=TRUE
 
 #' Utility function that takes in data, a model, level 1 and level 2 variable names, and settings for r2MLM function
 #' 
 #' @param data is the relevant input data set. Can be either a set list of imputed data sets or a single data set. 
 #' 
-#' @param within_covs is a character vector of the relevant column names for any within-subjects effects of interest.
+#' @param within_vars is a character vector of the relevant column names for any within-subjects effects of interest.
 #' 
-#' @param between_covs is a character vector of the relevant column names for any between-subjects effects of interest.
+#' @param between_vars is a character vector of the relevant column names for any between-subjects effects of interest.
 #' 
-#' @param random_covs is a character vector of the within-subject effects that include random variances and covariances.
+#' @param random_vars is a character vector of the within-subject effects that include random variances and covariances.
 #' 
 #' @param focal_model is a brms model object that contains the primary effects of interest
 #' 
@@ -155,22 +158,35 @@ clustermeancentered=TRUE
 #' 
 #' @param clustermeancentered is a paramter to pass through to the r2mlm function - defaults to true for current models
 #' 
-#' @param m number of imputations (if applicable)
-#' 
-#' @param link_func_trans function for transforming level-1 intercept variance (if link function used)
+#' @param link_func function for transforming level-1 intercept variance (if link function used)
 
-r2MLM_wrapper <- function(data, within_covs, between_covs, random_covs, focal_model, null_model,
-                          has_intercept=TRUE, clustermeancentered=TRUE, m=NULL, link_func=NULL){
+r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal_model, null_model,
+                          has_intercept=TRUE, clustermeancentered=TRUE, link_func=NULL){
   
   # First extract the appropriate posterior samples:
   posterior_df <- posterior_samples_extractor(null_model, focal_model, link_func)
   
+  if(class(df) == "list"){
+    r2mlm_posterior_samples <- data.frame()
+    for(l in 1:length(df)){
+      tmp_output <- posterior_r2mlm_draws(df[[l]], posterior_df, between_vars, within_vars, random_vars, has_intercept, 
+                                          clustermeancentered)
+      tmp_output["imputed_df"] <- l
+      r2mlm_posterior_samples <- rbind(r2mlm_posterior_samples)
+    }
+  }
   
+  else{ 
+    r2mlm_posterior_samples <- posterior_r2mlm_draws(df, posterior_df, between_vars, within_vars, random_vars, has_intercept, 
+                                                     clustermeancentered)
+  }
+  
+  return(r2mlm_posterior_samples)
 }
 
-focal_model <- S2_ANX_NegEvnt_x_DN_prop.NegEvnt
 
 posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL){
+  par_vals <- parnames(focal_model)
   # Select out relevant parameters:
   pars_to_select <- grepl("b_.*", par_vals) + 
     grepl("sd_ID__.*", par_vals) +
@@ -222,35 +238,103 @@ posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL)
   return(posterior_df[as.logical(final_names)])
 }
 
-test <- posterior_samples_extractor(S2_ANX_ucm, S2_ANX_NegEvnt_x_DN_prop.NegEvnt, link_func = "log")
 
-posterior_r2mlm_draws <- function(data, posterior_df, between_vars, within_vars, random_vars){
+posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, random_vars, has_intercept, 
+                                  clustermeancentered){
+  browser()
   # Note need to create and label interaction function outside of this and pass names in correct locations
   # May need some ifelse logic here 
-  within_vars_cols <- match(within_vars, colnames(data))
-  between_vars_cols <- match(between_vars, colnames(data))
-  random_vars_cols <- match(random_vars_cols, colnames(data))
-  
+  within_vars_cols <- match(within_vars, colnames(df))
+  between_vars_cols <- match(between_vars, colnames(df))
+  random_vars_cols <- match(random_vars, colnames(df))
+
   # Need to add in the Intercept if present (defuault will be TRUE for top function)
   if(has_intercept){
-    between_vars <- c("b_Intercept", between_vars)
+    between_vars <- c("Intercept", between_vars)
   }
   
-  if(class(data)  == "data.frame"){
-    foreach(r = 1:nrow(posterior_df)) %dopar% {
-      gamma_w <- posterior_df[r, within_vars]
-      gamma_b <- posterior_df[r, between_vars]
-      sigma <- posterior_df[r, "Sigma"]
+  # Could add a check here to make sure that all post_btw_vars are in the posterior_df
+  post_btw_vars <- paste0("b_", between_vars)
+  post_wth_vars <- paste0("b_", within_vars)
+  
+  # Creating the tau matrix for the model: 
+  if(has_intercept){
+    random_vars <- c("Intercept", random_vars)
+  }
+  
+  # Dynamically getting names for Tau matrix variables
+  post_tau_vars <- matrix(nrow=length(random_vars), ncol=length(random_vars))
+  post_var_names <- colnames(posterior_df)[grepl("var_ID__.*", colnames(posterior_df))]
+  post_cov_names <- colnames(posterior_df)[grepl("cov_ID__.*", colnames(posterior_df))]
+  
+  # Getting all the names in the right places:
+  for(i in 1:length(random_vars)){
+    for(j in 1:length(random_vars)){
+      if(i == j){
+        post_tau_vars[i, j] <- post_var_names[i]
+      }
+      else{
+        tmp_cov_name <- paste0("cov_ID__", random_vars[i], "__", random_vars[j])
+        if(tmp_cov_name %in% colnames(posterior_df)){
+          post_tau_vars[i, j] <- tmp_cov_name
+          post_tau_vars[j, i] <- tmp_cov_name
+        }
+      }
+    } 
+  }
+
+  if(class(df)  == "data.frame"){
+    cl <- parallel::makeCluster(N_CORES)
+    doParallel::registerDoParallel(cl)
+    post_var_decomp_out <- foreach(r = 1:nrow(posterior_df), .combine = rbind, .export = "r2MLM") %dopar% {
+      gamma_w <- unlist(posterior_df[r, post_wth_vars])
+      names(gamma_w) <- NULL
+      gamma_b <- unlist(posterior_df[r, post_btw_vars])
+      names(gamma_b) <-NULL
+      sigma <- posterior_df[r, "sigma"]
+      tau <- matrix(nrow = nrow(post_tau_vars), ncol = ncol(post_tau_vars))
       
-      # Creating the tau matrix for the model: 
+      # Extracting tau matrix values:
+      for(i in 1:nrow(post_tau_vars)){
+        for(j in 1:nrow(post_tau_vars)){
+          tau[i, j] <- posterior_df[r, post_tau_vars[i, j]]
+        }
+      }
       
+      # Written to be re-factored if I want to expand beyond options available for clustermeancentered analyses
+      # Currently all analyses include level 1 predictors that have been centered at the individual mean
+      r2mlm_out <- r2MLM(data=df, within_covs = within_vars_cols, between_covs = between_vars_cols, 
+                         random_covs = random_vars_cols, gamma_w = gamma_w, gamma_b = gamma_b, Tau = tau,
+                         sigma2 = sigma, has_intercept = has_intercept, clustermeancentered = clustermeancentered)
+      
+      decomp <- r2mlm_out$Decompositions
+      
+      data.frame(tot_fix_wthn = as.numeric(decomp["fixed, within", "total"]),
+                 tot_fix_btwn = as.numeric(decomp["fixed, between", "total"]), 
+                 tot_slp_varn = as.numeric(decomp["slope variation", "total"]), 
+                 tot_int_varn = as.numeric(decomp["mean variation", "total"]), 
+                 tot_sig_varn = as.numeric(decomp["sigma2", "total"]), 
+                 wthn_fix_wthn = as.numeric(decomp["fixed, within", "within"]), 
+                 wthn_slp_varn = as.numeric(decomp["slope variation", "within"]),
+                 wthn_sig_varn = as.numeric(decomp["sigma2", "within"]),
+                 btwn_fix_btwn = as.numeric(decomp["fixed, between", "between"]), 
+                 btwn_int_varn = as.numeric(decomp["mean variation", "between"]))
     }
+    parallel::stopCluster(cl)
   }
-  
-  
+  return(post_var_decomp_out)
 }
 
 
 lognormal_link_func <- function(beta_00, sigma_samples){
   return(log(1 + sigma_samples/beta_00))
+}
+
+
+data_loader <- function(data_filename, posterior_path, null_model, focal_model){
+  null_model_filename <- paste0(posterior_path, "/", null_model, ".RData")
+  focal_model_filename <- paste0(posterior_path, "/", focal_model, ".RData")
+  load(data_filename, envir = .GlobalEnv)
+  load(null_model_filename, envir = .GlobalEnv)
+  load(focal_model_filename, envir = .GlobalEnv)
 }
