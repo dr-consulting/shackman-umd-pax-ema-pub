@@ -1,6 +1,7 @@
 library(foreach)
 library(miceadds)
 library(brms)
+library(riverplot)
 N_CORES <- parallel::detectCores()-2 # for my workstation this gets me 10 cores
 
 #######################################################################################################################
@@ -176,10 +177,10 @@ r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal
       tmp_output <- posterior_r2mlm_draws(df[[l]], posterior_df, between_vars, within_vars, random_vars, has_intercept, 
                                           clustermeancentered)
       tmp_output["imputed_df"] <- l
-      r2mlm_posterior_samples <- rbind(r2mlm_posterior_samples)
+      r2mlm_posterior_samples <- rbind(r2mlm_posterior_samples, tmp_output)
       
       stop_time <- Sys.time()
-      run_time <- round(as.numeric(difftime(start_time, stop_time, units = "min")), 2)
+      run_time <- round(as.numeric(difftime(stop_time, start_time, units = "min")), 2)
       print(paste("Completed draws for imputed dataset:", l, "out of", length(df))) 
       print(paste("Total runtime:", run_time))
       print("Adjust expectations accordingly")
@@ -342,10 +343,53 @@ lognormal_link_func <- function(beta_00, sigma_samples){
 }
 
 
-data_loader <- function(data_filename, posterior_path, null_model, focal_model){
-  null_model_filename <- paste0(posterior_path, "/", null_model, ".RData")
+data_loader <- function(posterior_path, focal_model, data_filename=NULL, null_model=NULL){
+  if(!is.null(data_filename)){
+    load(data_filename, envir = .GlobalEnv)
+  }
+  
+  if(!is.null(null_model)){
+    null_model_filename <- paste0(posterior_path, "/", null_model, ".RData")
+    load(null_model_filename, envir = .GlobalEnv)
+  }
+  
   focal_model_filename <- paste0(posterior_path, "/", focal_model, ".RData")
-  load(data_filename, envir = .GlobalEnv)
-  load(null_model_filename, envir = .GlobalEnv)
   load(focal_model_filename, envir = .GlobalEnv)
 }
+
+
+# Trying out an implementation that includes some preformatted formula: 
+# The added spacing is to make riverplot part of this easier 
+# If I map formula on to these effects I can make this *pretty* flexible (or at least expandable)
+
+# Within Formulas: 
+# event <- "mean(lv1_only['tot_fix_wthn'])"
+# reactivity <- "mean(lv2_Exp_DN['tot_slp_varn'] + mean(lv2_Exp_DN['tot_sig_varn']) - mean(full_model['tot_slp_varn'] - mean(full_model['tot_sig_varn'])"
+# unmodeled <- "mean(full_model['tot_slp_varn'] + mean(full_model['tot_sig_varn']) - sum(within_decomp[1:2])"
+
+# Between Formulas: 
+# tonic_DN <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
+# shared_DN_exp <- "mean(lv1_only['tot_int_varn']) - (mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn'])))"
+# exposure <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_DN['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
+# Alright what I don't love about this is that it has to be labeled between_decomp under the hood 
+# Fairly brittle approach here but going to live with it for now. 
+# Could re-visit if I turn this into a more complete plotting package
+# unmodeled_btwn < - "mean(full_model['tot_int_varn']) + mean(full_model['tot_fix_btwn']) - sum(between_decomp[1:3])"
+
+# within_contrasts <- c(`Negative \n Event \n` = event, 
+#                      `Reactivity \n \n` = , 
+#                      `Unmod. \n Within \n` =)
+
+# between_contrasts <- c(`Tonic \n DN \n` = tonic_DN, 
+#                        `DN \n Shared w/ \n Exp.` = shared_DN_exp,
+#                        `Negative \n Event \n Exp.` = exposure, 
+#                        `Unmod. \n Between \n` = unmodeled_btwn)
+
+# custom_contrasts <- c()
+
+# model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
+
+
+# riverplot_df_helper <- function(model_variance_list, model_contrasts){
+  
+# }
