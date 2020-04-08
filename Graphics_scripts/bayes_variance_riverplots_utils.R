@@ -145,21 +145,25 @@ r2MLM <- function(data, within_covs ,between_covs, random_covs, gamma_w, gamma_b
 #' 
 #' @param data is the relevant input data set. Can be either a set list of imputed data sets or a single data set. 
 #' 
-#' @param within_vars is a character vector of the relevant column names for any within-subjects effects of interest.
+#' @param within_vars is a character vector of the relevant column names for any within-subjects vars of interest.
 #' 
-#' @param between_vars is a character vector of the relevant column names for any between-subjects effects of interest.
+#' @param between_vars is a character vector of the relevant column names for any between-subjects vars of interest.
 #' 
-#' @param random_vars is a character vector of the within-subject effects that include random variances and covariances.
+#' @param random_vars is a character vector of the within-subject vars that include random variances and covariances.
 #' 
 #' @param focal_model is a brms model object that contains the primary effects of interest
 #' 
-#' @param null_model is a brms model object represents a random intercepts model. 
+#' @param null_model is a brms model object represents a random intercepts model. Required if using lognormal prior for 
+#' intercept.
 #' 
-#' @param has_intercept is a parameter to pass through to the r2mlm function - defaults to true for current models
+#' @param has_intercept is a parameter to pass through to the r2mlm function. Defaults to true, and should not be 
+#' changed if attempting to replicate this workflow. Currently not robust to changes to this parameter. 
 #' 
-#' @param clustermeancentered is a paramter to pass through to the r2mlm function - defaults to true for current models
+#' @param clustermeancentered is a paramter to pass through to the r2mlm function. Defaults to true, and should not be 
+#' changed if attempting to replicate this workflow. Currently not robust to changes to this parameter. 
 #' 
-#' @param link_func function for transforming level-1 intercept variance (if link function used)
+#' @param link_func function for transforming level-1 intercept variance (if link function used). Currently only have 
+#' support for lognormal priors
 
 r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal_model, null_model,
                           has_intercept=TRUE, clustermeancentered=TRUE, link_func=NULL){
@@ -197,6 +201,7 @@ r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal
 
 
 posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL){
+  #browser()
   par_vals <- parnames(focal_model)
   # Select out relevant parameters:
   pars_to_select <- grepl("b_.*", par_vals) + 
@@ -241,10 +246,10 @@ posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL)
     }
   }
   
-  final_names <- grepl("b_.*", par_vals) + 
-    grepl("var_ID__.*", par_vals) +
-    grepl("cov_ID__.*", par_vals) +
-    grepl("sigma", par_vals)
+  final_names <- grepl("b_.*", colnames(posterior_df)) + 
+    grepl("var_ID__.*", colnames(posterior_df)) +
+    grepl("cov_ID__.*", colnames(posterior_df)) +
+    grepl("sigma", colnames(posterior_df))
   
   return(posterior_df[as.logical(final_names)])
 }
@@ -252,19 +257,29 @@ posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL)
 
 posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, random_vars, has_intercept, 
                                   clustermeancentered){
+  #browser()
   # Note need to create and label interaction function outside of this and pass names in correct locations
-  # May need some ifelse logic here 
+  # Added some if/else logic here but honestly this needs a re-factor to catch all edge cases... 
   if(!is.null(within_vars)){
     within_vars_cols <- match(within_vars, colnames(df))
     post_wth_vars <- paste0("b_", within_vars)
+  }
+  else{
+    within_vars_cols <- NULL
   }
   
   if(!is.null(between_vars)){
     between_vars_cols <- match(between_vars, colnames(df))
   }
+  else{
+    between_vars_cols <- NULL
+  }
   
   if(!is.null(random_vars)){
     random_vars_cols <- match(random_vars, colnames(df))
+  }
+  else{ 
+    random_vars_cols <- NULL
   }
   
   # Need to add in the Intercept if present (defuault will be TRUE for top function)
@@ -363,33 +378,159 @@ data_loader <- function(posterior_path, focal_model, data_filename=NULL, null_mo
 # If I map formula on to these effects I can make this *pretty* flexible (or at least expandable)
 
 # Within Formulas: 
-# event <- "mean(lv1_only['tot_fix_wthn'])"
-# reactivity <- "mean(lv2_Exp_DN['tot_slp_varn'] + mean(lv2_Exp_DN['tot_sig_varn']) - mean(full_model['tot_slp_varn'] - mean(full_model['tot_sig_varn'])"
-# unmodeled <- "mean(full_model['tot_slp_varn'] + mean(full_model['tot_sig_varn']) - sum(within_decomp[1:2])"
+event <- "mean(lv1_only['tot_fix_wthn'])"
+reactivity <- "mean(lv2_Exp_DN['tot_slp_varn'] + mean(lv2_Exp_DN['tot_sig_varn']) - mean(full_model['tot_slp_varn'] - mean(full_model['tot_sig_varn'])"
+unmodeled <- "mean(full_model['tot_slp_varn'] + mean(full_model['tot_sig_varn']) - sum(within_decomp[1:2])"
 
 # Between Formulas: 
-# tonic_DN <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
-# shared_DN_exp <- "mean(lv1_only['tot_int_varn']) - (mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn'])))"
-# exposure <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_DN['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
+tonic_DN <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
+shared_DN_exp <- "mean(lv1_only['tot_int_varn']) - (mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn'])))"
+exposure <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_DN['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
 # Alright what I don't love about this is that it has to be labeled between_decomp under the hood 
 # Fairly brittle approach here but going to live with it for now. 
 # Could re-visit if I turn this into a more complete plotting package
-# unmodeled_btwn < - "mean(full_model['tot_int_varn']) + mean(full_model['tot_fix_btwn']) - sum(between_decomp[1:3])"
+unmodeled_btwn < - "mean(full_model['tot_int_varn']) + mean(full_model['tot_fix_btwn']) - sum(between_decomp[1:3])"
 
-# within_contrasts <- c(`Negative \n Event \n` = event, 
-#                      `Reactivity \n \n` = , 
-#                      `Unmod. \n Within \n` =)
+within_contrasts <- c("Negative \n Event \n" = event, 
+                      "Reactivity \n \n" = reactivity, 
+                      "Unmod. \n Within \n" = unmodeled)
 
-# between_contrasts <- c(`Tonic \n DN \n` = tonic_DN, 
-#                        `DN \n Shared w/ \n Exp.` = shared_DN_exp,
-#                        `Negative \n Event \n Exp.` = exposure, 
-#                        `Unmod. \n Between \n` = unmodeled_btwn)
+between_contrasts <- c("Tonic \n DN \n" = tonic_DN, 
+                       "DN \n Shared w/ \n Exp." = shared_DN_exp,
+                       "Negative \n Event \n Exp." = exposure, 
+                       "Unmod. \n Between \n" = unmodeled_btwn)
 
-# custom_contrasts <- c()
+custom_contrasts <- c("Tonic \n DN \n" = tonic_DN, 
+                      "DN \n Shared w/ \n Exp." = shared_DN_exp, 
+                      "Reactivity \n \n" = reactivity)
 
-# model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
+model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
 
 
-# riverplot_df_helper <- function(model_variance_list, model_contrasts){
+riverplot_df_helper <- function(model_variance_list, model_names, within_constrasts, between_constrasts, 
+                                custom_contrasts=NULL, within_color, between_color, merge_color, 
+                                custom_contrast_name=NULL, main_filename, main_title, custom_filename=NULL, 
+                                custom_title=NULL, combined_plot_filename=NULL){
+  names(model_variance_list) <- model_names
   
-# }
+  # Expand posterior data sets: 
+  for(i in 1:length(model_names)){
+    eval(parse(text = paste(model_names[i], "model_variance_list[[i]]", sep="<-")))
+  }
+  
+  N1 <- c(names(within_constrasts), names(between_constrasts), "Total \n Within", "Total \n Between")
+  N2 <- c(rep("Total \n Within", length(within_constrasts)), rep("Total \n Between", length(between_constrasts)), 
+          rep("Total \n Variance", 2))
+  
+  within_decomp <- rep(NA, length(within_constrasts))
+  for(i in 1:length(within_constrasts)){
+    within_decomp[i] <- eval(parse(text = within_constrasts[i]))
+  }
+  
+  between_decomp <- rep(NA, length(between_contrasts))
+  for(i in 1:length(between_contrasts)){
+    between_decomp[i] <- eval(parse(text = between_constrasts[i]))
+  }
+  
+  tot_decomp <- c(sum(within_decomp), sum(between_decomp))
+  value <- c(within_decomp, between_decomp, tot_decomp)
+
+  # Updating labels (i.e., N1)
+  N1 <- paste(N1, "\n", paste0(round(value*100, digits = 2), "%"))
+  N2 <- c(N2[grepl("*Within", N2)], 
+          N2[grepl("*Between", N2)], 
+          rep("Total \n Variance", 2))
+  
+  N2 <- ifelse(grepl("Total \n Within", N2), N1[grepl("Total \n Within*", N1)], N2)
+  N2 <- ifelse(grepl("Total \n Between", N2), N1[grepl("Total \n Between*", N1)], N2)
+  
+  tot_ind_effects <- length(within_constrasts) + length(between_constrasts)
+  effects_y_pos <- 0:(tot_ind_effects-1)*2 + .5
+  
+  cut_points <- quantile(effects_y_pos, c(.25, .75, .5), names=FALSE)
+  
+  nodes <- data.frame(ID = c(N1, "Total \n Variance"), 
+                      x = c(rep(1, tot_ind_effects), rep(2, 2), 3), 
+                      y = c(effects_y_pos, cut_points), 
+                      stringsAsFactors = FALSE)
+  
+  col_pal <- c(rep(within_color, length(within_constrasts)), 
+               rep(between_color, length(between_constrasts)),
+               within_color, between_color, merge_color)
+  
+  styles <- lapply(nodes$y, 
+                   function(x){
+                     list(col = col_pal[x], lty=0, textcol = "black")
+                   })
+  
+  for(i in 1:length(col_pal)){
+    styles[[i]]$col <- col_pal[i]
+  }
+  
+  names(styles) <- nodes$ID
+  
+  river_DF <- data.frame(N1 = N1, 
+                         N2 = N2, 
+                         Value = value, 
+                         stringsAsFactors = FALSE)
+  
+  main_river_plot <- makeRiver(nodes = nodes, 
+                               edges = river_DF, 
+                               node_styles = styles)
+  
+  postscript(main_filename, height = 10, width = 10)
+  riverplot(main_river_plot, nodewidth = 3, plot_area = .95)
+  title(ylab=main_title)
+  dev.off()
+  
+  if(sum(is.null(c(custom_contrasts, custom_contrast_name, custom_filename, custom_title))) == 0){
+    n_custom_constrasts <- length(custom_contrasts)
+    cust_river_DF <- data.frame(stringsAsFactors = FALSE)
+    
+    for(i in 1:n_custom_constrasts){
+      cust_river_DF <- rbind(cust_river_DF, river_DF[grepl(paste0(names(custom_contrasts)[i], "*"), river_DF$N1), ])
+    }
+    
+    cust_effects_y_pos <- 0:(n_custom_constrasts-1)*2 + .5
+    end_point <- median(cust_effects_y_pos)
+    
+    nodes <- data.frame(ID = c(cust_river_DF$N1, custom_contrast_name), 
+                        x = c(rep(1, n_custom_constrasts), 2), 
+                        y = c(cust_effects_y_pos, end_point), 
+                        stringsAsFactors = FALSE)
+    
+    col_pal <- ifelse(grepl("Total \n Within.*", cust_river_DF$N2), within_color, between_color)
+    col_pal <- c(col_pal, merge_color)
+    
+    styles <- lapply(nodes$y, 
+                     function(x){
+                       list(col = col_pal[x], lty=0, textcol = "black")
+                     })
+    
+    for(i in 1:length(col_pal)){
+      styles[[i]]$col <- col_pal[i]
+    }
+    
+    names(styles) <- nodes$ID
+    
+    # Overwrite this after the colors have been assigned (can leverage previous DF info this way)
+    cust_river_DF$N2 <- custom_contrast_name
+    
+    # Make the custom plot...
+    custom_river_plot <- makeRiver(nodes = nodes, 
+                                   edges = cust_river_DF, 
+                                   node_styles = styles)
+    postscript(custom_filename, height = 10, width = 10)
+    riverplot(custom_river_plot, nodewidth = 3, plot_area = .95)
+    title(ylab=custom_title)
+    dev.off()
+    
+    # Make the combined plot 
+    postscript(combined_plot_filename, height = 20, width = 10)
+    layout(matrix(c(1,2,2), nrow=3, ncol=1))
+    par(mar = c(0,0,0,0), cex = 1)
+    riverplot(custom_river_plot, nodewidth = 3, plot_area = .8)
+    riverplot(main_river_plot, nodewidth = 3, plot_area = .8)
+    dev.off()
+  }
+}

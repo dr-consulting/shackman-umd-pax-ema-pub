@@ -32,7 +32,7 @@ between_vars <- c("c.DN", "prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 lv2_Exp_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                        focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                        focal_model = S2_NEG_NegEvnt_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
                                         has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 
@@ -48,7 +48,7 @@ between_vars <- c("c.DN")
 random_vars <- c("c.NegEvnt")
 
 lv2_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                    focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                    focal_model = S2_NEG_NegEvnt_DN, null_model=S2_NEG_ucm, 
                                     has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 
@@ -64,7 +64,7 @@ between_vars <- c("prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 lv2_Exp_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                     focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                     focal_model = S2_NEG_NegEvnt_prop.NegEvnt, null_model=S2_NEG_ucm, 
                                      has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 # Just some memory saving...
@@ -79,5 +79,56 @@ between_vars <- NULL
 random_vars <- c("c.NegEvnt")
 
 lv1_only_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                      focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                      focal_model = S2_NEG_NegEvnt, null_model=S2_NEG_ucm, 
                                       has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
+
+# Just some memory saving...
+remove(list=c("S2_NEG_NegEvnt"))
+gc()
+
+#----------------------------------------------------------------------------------------------------------------------
+# Within Formulas: 
+event <- "mean(lv1_only[['tot_fix_wthn']])"
+reactivity <- "mean(lv2_Exp_DN[['tot_slp_varn']]) + mean(lv2_Exp_DN[['tot_sig_varn']]) - mean(full_model[['tot_slp_varn']]) - mean(full_model[['tot_sig_varn']])"
+unmodeled <- "mean(full_model[['tot_slp_varn']]) + mean(full_model[['tot_sig_varn']]) + mean(full_model[['tot_fix_wthn']]) - sum(within_decomp[1:2])"
+
+# Between Formulas: 
+tonic_DN <- "mean(lv2_Exp[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_varn']])"
+exposure <- "mean(lv2_DN[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_varn']])"
+shared_DN_exp <- "mean(lv1_only[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_varn']]) - sum(between_decomp[1:2])"
+# Alright what I don't love about this is that it has to be labeled between_decomp under the hood 
+# Fairly brittle approach here but going to live with it for now. 
+# Could re-visit if I turn this into a more complete plotting package
+unmodeled_btwn <- "mean(full_model[['tot_int_varn']]) + mean(full_model[['tot_fix_btwn']]) - sum(between_decomp[1:3])"
+
+within_contrasts <- c("Negative \n Event" = event, 
+                      "Reactivity \n" = reactivity, 
+                      "Unmod. \n Within" = unmodeled)
+
+between_contrasts <- c("Tonic \n DN" = tonic_DN, 
+                       "Negative \n Event \n Exp." = exposure,
+                       "DN \n Shared w/ \n Exp." = shared_DN_exp,
+                       "Unmod. \n Between" = unmodeled_btwn)
+
+custom_contrasts <- c("Tonic \n DN" = tonic_DN, 
+                      "DN \n Shared w/ \n Exp." = shared_DN_exp, 
+                      "Reactivity \n" = reactivity)
+
+model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
+
+model_variance_list <- list()
+model_variance_list[[1]] <- full_model_decomp
+model_variance_list[[2]] <- lv1_only_decomp
+model_variance_list[[3]] <- lv2_DN_decomp
+model_variance_list[[4]] <- lv2_Exp_decomp
+model_variance_list[[5]] <- lv2_Exp_DN_decomp
+
+riverplot_df_helper(model_variance_list, model_names, within_contrasts, between_contrasts, custom_contrasts, 
+                    within_color = RColorBrewer::brewer.pal(9, "Reds")[5], 
+                    between_color = RColorBrewer::brewer.pal(9, "Blues")[5], 
+                    merge_color = RColorBrewer::brewer.pal(9, "Purples")[5], 
+                    custom_contrast_name = "Combined \n DN Effect", main_filename = "~/S2_NEG_mood_decomp.eps", 
+                    main_title = "Total Variance Decomposition: Negative Mood, DN, and Negative Events", 
+                    custom_filename = "~/S2_NEG_mood_DN_combined.eps", 
+                    custom_title = "DN Variance Decomposition: Negative Mood, DN, and Negative Events", 
+                    combined_plot_filename = "~/S2_NEG_mood_full_decomp.eps")
