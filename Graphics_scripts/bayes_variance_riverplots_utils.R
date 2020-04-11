@@ -373,44 +373,14 @@ data_loader <- function(posterior_path, focal_model, data_filename=NULL, null_mo
 }
 
 
-# Trying out an implementation that includes some preformatted formula: 
-# The added spacing is to make riverplot part of this easier 
-# If I map formula on to these effects I can make this *pretty* flexible (or at least expandable)
-
-# Within Formulas: 
-event <- "mean(lv1_only['tot_fix_wthn'])"
-reactivity <- "mean(lv2_Exp_DN['tot_slp_varn'] + mean(lv2_Exp_DN['tot_sig_varn']) - mean(full_model['tot_slp_varn'] - mean(full_model['tot_sig_varn'])"
-unmodeled <- "mean(full_model['tot_slp_varn'] + mean(full_model['tot_sig_varn']) - sum(within_decomp[1:2])"
-
-# Between Formulas: 
-tonic_DN <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
-shared_DN_exp <- "mean(lv1_only['tot_int_varn']) - (mean(lv1_only['tot_int_varn']) - (mean(lv2_Exp['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn'])))"
-exposure <- "mean(lv1_only['tot_int_varn']) - (mean(lv2_DN['tot_int_varn']) - mean(lv2_Exp_DN['tot_int_varn']))"
-# Alright what I don't love about this is that it has to be labeled between_decomp under the hood 
-# Fairly brittle approach here but going to live with it for now. 
-# Could re-visit if I turn this into a more complete plotting package
-unmodeled_btwn < - "mean(full_model['tot_int_varn']) + mean(full_model['tot_fix_btwn']) - sum(between_decomp[1:3])"
-
-within_contrasts <- c("Negative \n Event \n" = event, 
-                      "Reactivity \n \n" = reactivity, 
-                      "Unmod. \n Within \n" = unmodeled)
-
-between_contrasts <- c("Tonic \n DN \n" = tonic_DN, 
-                       "DN \n Shared w/ \n Exp." = shared_DN_exp,
-                       "Negative \n Event \n Exp." = exposure, 
-                       "Unmod. \n Between \n" = unmodeled_btwn)
-
-custom_contrasts <- c("Tonic \n DN \n" = tonic_DN, 
-                      "DN \n Shared w/ \n Exp." = shared_DN_exp, 
-                      "Reactivity \n \n" = reactivity)
-
-model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
+range01<-function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
 
 
 riverplot_df_helper <- function(model_variance_list, model_names, within_constrasts, between_constrasts, 
                                 custom_contrasts=NULL, within_color, between_color, merge_color, 
                                 custom_contrast_name=NULL, main_filename, main_title, custom_filename=NULL, 
                                 custom_title=NULL, combined_plot_filename=NULL){
+  
   names(model_variance_list) <- model_names
   
   # Expand posterior data sets: 
@@ -434,7 +404,28 @@ riverplot_df_helper <- function(model_variance_list, model_names, within_constra
   
   tot_decomp <- c(sum(within_decomp), sum(between_decomp))
   value <- c(within_decomp, between_decomp, tot_decomp)
-
+  
+  if(sum(value < 0) > 0){
+    print("Detected a negative variance term")
+    neg_var_pos <- which(value < 0)
+    print(paste(N1[neg_var_pos], "=", value[neg_var_pos]))
+    
+    within_pos <- which(grepl("*Within", N2))
+    if(neg_var_pos %in% within_pos){
+      # Reover negative variance from the "Unmodeled" term
+      unmod_pos <- which(grepl("Unmod.*Within", N1[within_pos]))
+      value[unmod_pos] <- value[unmod_pos] + sum(value[neg_var_pos])
+    }
+    
+    between_pos <- which(grepl("*Between", N2))
+    if(neg_var_pos %in% between_pos){
+      # Reover negative variance from the "Unmodeled" term
+      unmod_pos <- which(grepl("Unmod.*Between", N1))
+      value[unmod_pos] <- value[unmod_pos] + sum(value[neg_var_pos])
+    }
+    value[neg_var_pos] <- 0
+  }
+  
   # Updating labels (i.e., N1)
   N1 <- paste(N1, "\n", paste0(round(value*100, digits = 2), "%"))
   N2 <- c(N2[grepl("*Within", N2)], 
@@ -474,6 +465,7 @@ riverplot_df_helper <- function(model_variance_list, model_names, within_constra
                          Value = value, 
                          stringsAsFactors = FALSE)
   
+
   main_river_plot <- makeRiver(nodes = nodes, 
                                edges = river_DF, 
                                node_styles = styles)
