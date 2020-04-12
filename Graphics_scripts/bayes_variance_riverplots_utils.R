@@ -380,7 +380,7 @@ riverplot_df_helper <- function(model_variance_list, model_names, within_constra
                                 custom_contrasts=NULL, within_color, between_color, merge_color, 
                                 custom_contrast_name=NULL, main_filename, main_title, custom_filename=NULL, 
                                 custom_title=NULL, combined_plot_filename=NULL){
-  
+
   names(model_variance_list) <- model_names
   
   # Expand posterior data sets: 
@@ -411,17 +411,17 @@ riverplot_df_helper <- function(model_variance_list, model_names, within_constra
     print(paste(N1[neg_var_pos], "=", value[neg_var_pos]))
     
     within_pos <- which(grepl("*Within", N2))
-    if(neg_var_pos %in% within_pos){
+    if(sum(neg_var_pos %in% within_pos) > 0){
       # Reover negative variance from the "Unmodeled" term
-      unmod_pos <- which(grepl("Unmod.*Within", N1[within_pos]))
-      value[unmod_pos] <- value[unmod_pos] + sum(value[neg_var_pos])
+      unmod_pos <- which(grepl("Unmod.*Within", N1))
+      value[unmod_pos] <- value[unmod_pos] + sum(value[neg_var_pos[neg_var_pos %in% within_pos]])
     }
     
     between_pos <- which(grepl("*Between", N2))
-    if(neg_var_pos %in% between_pos){
+    if(sum(neg_var_pos %in% between_pos) > 0){
       # Reover negative variance from the "Unmodeled" term
       unmod_pos <- which(grepl("Unmod.*Between", N1))
-      value[unmod_pos] <- value[unmod_pos] + sum(value[neg_var_pos])
+      value[unmod_pos] <- value[unmod_pos] + sum(value[neg_var_pos[neg_var_pos %in% between_pos]])
     }
     value[neg_var_pos] <- 0
   }
