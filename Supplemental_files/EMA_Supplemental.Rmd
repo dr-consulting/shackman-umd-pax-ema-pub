@@ -71,10 +71,11 @@ g1<-ggplot()+
   geom_histogram(data=supp_DN_study1,
                  aes(x=DN, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5], 
+                 alpha=.75)+
   geom_line(data = dens, 
             aes(x=DN, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -84,9 +85,35 @@ g1
 
 \pagebreak
 
-## Supplemental Figure S2 - Histogram and Density Overlay of Study 1 Momentary Mood Scores
+## Supplemental Figure S2 - Histogram and Density Overlay of Study 2 Dispositional Negativity Scores
+```{r S2_SuppF2}
+# Using Freedman-Diaconis rule for selecting appropriate binwidth:
+h <- 2 * IQR(supp_DN_study2$DN) / length(supp_DN_study2$DN)^(1/3)
 
-```{r S1_SuppF2, warning=FALSE}
+# In Maryland State Colors - Thank you Lord Baltimore 
+dens<-data.frame(DN = density(supp_DN_study2$DN)$x, 
+                 Density = density(supp_DN_study2$DN)$y)
+
+g1<-ggplot()+
+  geom_histogram(data=supp_DN_study2,
+                 aes(x=DN, y=..density..), 
+                 binwidth = h, 
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
+  geom_line(data = dens, 
+            aes(x=DN, y=Density), 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
+            lwd=2)+
+  theme_bw()+
+  ylab('Density')+
+  xlab('Standardized Dispositional Negativity')
+g1
+```
+
+\pagebreak
+
+## Supplemental Figure S3 - Histogram and Density Overlay of Study 1 Momentary Mood Scores
+
+```{r S1_SuppF3, warning=FALSE}
 dens_NA<-data.frame(DN = density(na.omit(supp_Mood_study1$MAFS_NA))$x, 
                     Density = density(na.omit(supp_Mood_study1$MAFS_NA))$y)
 
@@ -99,10 +126,11 @@ g1<-ggplot()+
   geom_histogram(data = supp_Mood_study1, 
                  aes(x=MAFS_NA, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5], 
+                 alpha=.75)+
   geom_line(data = dens_NA, 
             aes(x=DN, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -114,10 +142,11 @@ g2<-ggplot()+
   geom_histogram(data = supp_Mood_study1, 
                  aes(x=MAFS_PA, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5], 
+                 alpha=.75)+
   geom_line(data = dens_PA, 
             aes(x=DN, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -170,8 +199,8 @@ DN_NegEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "NegEvnt_mean")
 g1 <- ggplot(data = supp_descrip_study1, 
            aes(x = DN, 
                y = NegEvnt_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Negative Event Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Negative Event Ratings\nas a Function of DN") +
@@ -194,8 +223,8 @@ DN_NegMood_rtg_reg <- regression(supp_descrip_study1, "DN", "NEG_mean")
 g2 <- ggplot(data = supp_descrip_study1, 
            aes(x = DN, 
                y = NEG_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Negative Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Negative Mood Ratings\nas a Function of DN") +
@@ -217,8 +246,8 @@ DN_PosEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "PosEvnt_mean")
 g3 <- ggplot(data = supp_descrip_study1, 
            aes(x = DN, 
                y = PosEvnt_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Positive Event Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Positive Event Ratings\nas a Function of DN") +
@@ -240,8 +269,8 @@ DN_PosMood_rtg_reg <- regression(supp_descrip_study1, "DN", "POS_mean")
 g4 <- ggplot(data = supp_descrip_study1, 
            aes(x = DN, 
                y = POS_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Positive Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Positive Mood Ratings\nas a Function of DN") +
@@ -260,50 +289,20 @@ g4 <- ggplot(data = supp_descrip_study1,
 # Combining plots and adding marginal historgrams for added information
 cowplot::plot_grid(ggExtra::ggMarginal(g1, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g2, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g3, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g4, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"),
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]),
                    ncol = 2, 
                    labels = c("A", "B", "C", "D"))
 ```
 *Note*. DN = Dispositional Negativity. The top histogram is effectiely repeated across each plot. The top row displays the association between dispositional negativity scores and participants' mean negative event ratings in plot **A** and the association between dispositional negativity and participants' mean negative momentary mood ratings in panel **B**. The same associations are presented in panels **C** and **D** but for the corresponding positively valenced measures. 
-
-\pagebreak
-
-## Supplemental Figure S3 - Histogram and Density Overlay of Study 2 Dispositional Negativity Scores
-```{r S2_SuppF3}
-# Using Freedman-Diaconis rule for selecting appropriate binwidth:
-h <- 2 * IQR(supp_DN_study2$DN) / length(supp_DN_study2$DN)^(1/3)
-
-# In Maryland State Colors - Thank you Lord Baltimore 
-dens<-data.frame(DN = density(supp_DN_study2$DN)$x, 
-                 Density = density(supp_DN_study2$DN)$y)
-
-g1<-ggplot()+
-  geom_histogram(data=supp_DN_study2,
-                 aes(x=DN, y=..density..), 
-                 binwidth = h, 
-                 fill='#ffd520')+
-  geom_line(data = dens, 
-            aes(x=DN, y=Density), 
-            color = '#E03a3e', 
-            lwd=2)+
-  theme_bw()+
-  ylab('Density')+
-  xlab('Standardized Dispositional Negativity')
-g1
-```
 
 \pagebreak
 
@@ -316,8 +315,8 @@ DN_NegEvnt_prop_reg <- regression(supp_descrip_study2, "DN", "NE_prop")
 g1 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = NE_prop))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Relative Frequency of Negative Events", 
        x = "Standardized DN Scores", 
        title = "Frequency of Negative Events\nas a Function of DN") +
@@ -339,8 +338,8 @@ DN_NegMood_rtg_reg <- regression(supp_descrip_study2, "DN", "NA_mean")
 g2 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = NA_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Negative Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Negative Mood Ratings\nas a Function of DN") +
@@ -362,8 +361,8 @@ DN_AnxMood_rtg_reg <- regression(supp_descrip_study2, "DN", "ANX_mean")
 g3 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = ANX_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Anxious Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Anxious Mood Ratings\nas a Function of DN") +
@@ -385,8 +384,8 @@ DN_DepMood_rtg_reg <- regression(supp_descrip_study2, "DN", "DEP_mean")
 g4 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = DEP_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Depressed Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Depressed Mood Ratings\nas a Function of DN") +
@@ -405,20 +404,16 @@ g4 <- ggplot(data = supp_descrip_study2,
 # Combining plots and adding marginal historgrams for added information
 cowplot::plot_grid(ggExtra::ggMarginal(g1, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g2, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g3, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g4, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"),
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]),
                    ncol = 2, 
                    labels = c("A", "B", "C", "D"))
 ```
@@ -433,8 +428,8 @@ DN_PosEvnt_prop_reg <- regression(supp_descrip_study2, "DN", "PE_prop")
 g1 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = PE_prop))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Relative Frequency of Positive Events", 
        x = "Standardized DN Scores", 
        title = "Frequency of Positive Events\nas a Function of DN") +
@@ -456,8 +451,8 @@ DN_PosMood_rtg_reg <- regression(supp_descrip_study2, "DN", "PA_mean")
 g2 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = PA_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Positive Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Positive Mood Ratings\nas a Function of DN") +
@@ -479,8 +474,8 @@ DN_JoyMood_rtg_reg <- regression(supp_descrip_study2, "DN", "JOY_mean")
 g3 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = JOY_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Cheerful Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Cheerful Mood Ratings\nas a Function of DN") +
@@ -502,8 +497,8 @@ DN_CalmMood_rtg_reg <- regression(supp_descrip_study2, "DN", "CALM_mean")
 g4 <- ggplot(data = supp_descrip_study2, 
            aes(x = DN, 
                y = CALM_mean))+
-  geom_point(alpha = .75, color = "#ffd520")+
-  stat_smooth(method = "lm", se = FALSE, color = "#E03a3e")+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
   labs(y = "Mean Calm Mood Rating", 
        x = "Standardized DN Scores", 
        title = "Mean Calm Mood Ratings\nas a Function of DN") +
@@ -522,20 +517,16 @@ g4 <- ggplot(data = supp_descrip_study2,
 # Combining plots and adding marginal historgrams for added information
 cowplot::plot_grid(ggExtra::ggMarginal(g1, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g2, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g3, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"), 
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
                    ggExtra::ggMarginal(g4, 
                                        type = "histogram",
-                                       fill = "#ffd520", 
-                                       color = "#E03a3e"),
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]),
                    ncol = 2, 
                    labels = c("A", "B", "C", "D"))
 ```
@@ -563,8 +554,8 @@ plot_samp1 %>%
              shape = Eigenvalue_src)) +
   geom_point(size = 1.5) +
   geom_line() + 
-  scale_color_manual(values = c("Horn's Parallel Analysis" = "#ffd520", 
-                                "Obtained Eigenvalues" = "#E03a3e"), name = "") +
+  scale_color_manual(values = c("Horn's Parallel Analysis" = RColorBrewer::brewer.pal(9, "Reds")[5], 
+                                "Obtained Eigenvalues" = RColorBrewer::brewer.pal(9, "Blues")[5]), name = "") +
   scale_shape_manual(values = c("Horn's Parallel Analysis" = 17, 
                                 "Obtained Eigenvalues" = 16), name = "") +
   labs(title = paste0("Split Half Sample 1 (", nrow(dat.EFA), " Observations)")) +
@@ -586,10 +577,10 @@ g_Neg<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=NEG, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -604,10 +595,10 @@ g_Pos<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=POS, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -622,10 +613,10 @@ g_Anx<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=ANX, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -641,10 +632,10 @@ g_Dep<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=DEP, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -659,10 +650,10 @@ g_Joy<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=JOY, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -677,10 +668,10 @@ g_Calm<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=CALM, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -695,10 +686,10 @@ g_Angry<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=ANG, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
@@ -713,10 +704,10 @@ g_Tired<-ggplot()+
   geom_histogram(data = supp_Mood_comps_study2, 
                  aes(x=TRD, y=..density..), 
                  binwidth = h, 
-                 fill='#ffd520')+
+                 fill=RColorBrewer::brewer.pal(9, "Blues")[5])+
   geom_line(data = dens, 
             aes(x=x, y=Density), 
-            color = '#E03a3e', 
+            color = RColorBrewer::brewer.pal(9, "Reds")[5], 
             lwd=2)+
   theme_bw()+
   ylab('Density')+
