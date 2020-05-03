@@ -218,11 +218,11 @@ posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL,
   }
   
   else{
-    pars_to_select <- grepl("b_NEG.*", par_vals) + 
-      grepl("bsp_NEG_*", par_vals) +
-      grepl("sd_ID__NEG.*", par_vals) +
-      grepl("cor_ID__NEG.*", par_vals) +
-      grepl("sigma_NEG", par_vals)
+    pars_to_select <- grepl("b.*", par_vals) + 
+      grepl("bsp.*", par_vals) +
+      grepl("sd_ID__.*", par_vals) +
+      grepl("cor_ID__.*", par_vals) +
+      grepl("sigma*", par_vals)
   }
   
   # Choose only parameters needed for variance calculations

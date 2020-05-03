@@ -2,6 +2,7 @@ source("~/dr-consulting_GH/shackman-umd-pax-ema-pub/Graphics_scripts/bayes_varia
 
 POSTERIOR_PATH <- "/media/matthew/My Book/EMA_S2_Bayesian_Posteriors"
 DATA_FILEPATH <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Data/study2_data.RData"
+SUMMARY_DIR <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_2_model_summaries/"
 
 data_loader(POSTERIOR_PATH, "S2_NEG_NegEvnt_x_DN_prop.NegEvnt", DATA_FILEPATH, "S2_NEG_ucm")
 
@@ -17,7 +18,8 @@ between_vars <- c("c.DN", "prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 full_model_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                        focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                        focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm,
+                                        summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_x_DN.txt"),
                                         has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 # Just some memory saving...
@@ -32,7 +34,8 @@ between_vars <- c("c.DN", "prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 lv2_Exp_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                        focal_model = S2_NEG_NegEvnt_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                        focal_model = S2_NEG_NegEvnt_DN_prop.NegEvnt, null_model=S2_NEG_ucm,
+                                        summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_DN_Exp.txt"), 
                                         has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 
@@ -49,6 +52,7 @@ random_vars <- c("c.NegEvnt")
 
 lv2_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
                                     focal_model = S2_NEG_NegEvnt_DN, null_model=S2_NEG_ucm, 
+                                    summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_DN.txt"),
                                     has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 
@@ -64,7 +68,8 @@ between_vars <- c("prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 lv2_Exp_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                     focal_model = S2_NEG_NegEvnt_prop.NegEvnt, null_model=S2_NEG_ucm, 
+                                     focal_model = S2_NEG_NegEvnt_prop.NegEvnt, null_model=S2_NEG_ucm,
+                                     summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_Exp.txt"), 
                                      has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 # Just some memory saving...
@@ -80,6 +85,7 @@ random_vars <- c("c.NegEvnt")
 
 lv1_only_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
                                       focal_model = S2_NEG_NegEvnt, null_model=S2_NEG_ucm, 
+                                      summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt.txt"),
                                       has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
 # Just some memory saving...
@@ -127,8 +133,8 @@ riverplot_df_helper(model_variance_list, model_names, within_contrasts, between_
                     within_color = RColorBrewer::brewer.pal(9, "Reds")[5], 
                     between_color = RColorBrewer::brewer.pal(9, "Blues")[5], 
                     merge_color = RColorBrewer::brewer.pal(9, "Purples")[5], 
-                    custom_contrast_name = "Combined \n DN Effect", main_filename = "~/S2_NEG_mood_decomp.eps", 
+                    custom_contrast_name = "Combined \n DN Effect", main_filename = "~/S2_NEG_NegEvnt_decomp.eps", 
                     main_title = "Total Variance Decomposition: Negative Mood, DN, and Negative Events", 
-                    custom_filename = "~/S2_NEG_mood_DN_combined.eps", 
+                    custom_filename = "~/S2_NEG_NegEvnt_DN_combined.eps", 
                     custom_title = "DN Variance Decomposition: Negative Mood, DN, and Negative Events", 
-                    combined_plot_filename = "~/S2_NEG_mood_full_decomp.eps")
+                    combined_plot_filename = "~/S2_NEG_NegEvn_full_decomp.eps")
