@@ -165,10 +165,11 @@ r2MLM <- function(data, within_covs ,between_covs, random_covs, gamma_w, gamma_b
 #' @param link_func function for transforming level-1 intercept variance (if link function used). Currently only have 
 #' support for lognormal priors
 
-r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal_model, null_model,
+r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal_model, null_model, summary_filepath,
                           has_intercept=TRUE, clustermeancentered=TRUE, link_func=NULL){
   
   # First extract the appropriate posterior samples:
+  #browser()
   posterior_df <- posterior_samples_extractor(null_model, focal_model, link_func)
   
   if(class(df) == "list"){
@@ -192,64 +193,104 @@ r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal
   }
   
   else{ 
-    r2mlm_posterior_samples <- posterior_r2mlm_draws(df, posterior_df, between_vars, within_vars, random_vars, has_intercept, 
-                                                     clustermeancentered)
+    r2mlm_posterior_samples <- posterior_r2mlm_draws(df, posterior_df, between_vars, within_vars, random_vars, 
+                                                     has_intercept, clustermeancentered)
   }
+  # output text
+  sink(summary_filepath)
+  psych::describe(r2mlm_posterior_samples, skew=FALSE, quant=c(.025, .975))
+  sink()
   
   return(r2mlm_posterior_samples)
 }
 
 
-posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL){
-  #browser()
+posterior_samples_extractor <- function(null_model, focal_model, link_func=NULL, resp=NULL){
+  # browser()
   par_vals <- parnames(focal_model)
   # Select out relevant parameters:
-  pars_to_select <- grepl("b_.*", par_vals) + 
-    grepl("sd_ID__.*", par_vals) +
-    grepl("cor_ID__.*", par_vals) +
-    grepl("sigma", par_vals)
+  if(!is.null(resp)){
+    pars_to_select <- grepl(paste0("b_", resp, ".*"), par_vals) + 
+      grepl(paste0("bsp_", resp, "*"), par_vals) +
+      grepl(paste0("sd_ID__", resp, ".*"), par_vals) +
+      grepl(paste0("cor_ID__", resp, ".*"), par_vals) +
+      grepl(paste0("sigma_", resp), par_vals)
+  }
+  
+  else{
+    pars_to_select <- grepl("b_NEG.*", par_vals) + 
+      grepl("bsp_NEG_*", par_vals) +
+      grepl("sd_ID__NEG.*", par_vals) +
+      grepl("cor_ID__NEG.*", par_vals) +
+      grepl("sigma_NEG", par_vals)
+  }
   
   # Choose only parameters needed for variance calculations
   par_vals <- par_vals[as.logical(pars_to_select)]
   posterior_df <- posterior_samples(focal_model, pars=par_vals, add_chain=TRUE)
   
+  # Selecting random effects
+  if(!is.null(resp)){
+    ranef_sd_names <- par_vals[grepl(paste0("sd_ID__", resp, "*"), par_vals)]
+    ranef_cor_names <- par_vals[grepl(paste0("cor_ID__", resp, "*"), par_vals)]
+  }
+  
+  else{
+    ranef_sd_names <- par_vals[grepl(paste0("sd_ID__", "*"), par_vals)]
+    ranef_cor_names <- par_vals[grepl(paste0("cor_ID__", "*"), par_vals)]
+  }
+  
   # Create variance/covariance columns for random effects: 
-  ranef_sd_names <- par_vals[grepl("sd_ID__.*", par_vals)]
   n_ranef <- length(ranef_sd_names)
   if(n_ranef >= 1){
     for(i in 1:n_ranef){
       ranef_var_name <- gsub("sd", "var", ranef_sd_names[i])
       posterior_df[ranef_var_name] <- posterior_df[ranef_sd_names[i]]^2 
+      varname <- strsplit(ranef_var_name, split = "__")[[1]][2]
+      tmp_cor_name <- ranef_cor_names[grepl(paste0("*", varname, "*"), ranef_cor_names)]
+      for(j in 1:length(tmp_cor_name)){
+        sd_name1 <- strsplit(tmp_cor_name, split = "__")[[1]][2]
+        sd_name2 <- strsplit(tmp_cor_name, split = "__")[[1]][3]
+        ranef_cov_name <- gsub("cor", "cov", tmp_cor_name[j])
+        posterior_df[ranef_cov_name] <- posterior_df[tmp_cor_name[j]]*
+          posterior_df[paste0("sd_ID__", sd_name1)]*
+          posterior_df[paste0("sd_ID__", sd_name2)]
+      }
     }
   }
-  
-  # Pull out covariance terms
-  ranef_cor_names <- par_vals[grepl("cor_ID__.*", par_vals)]
-  n_ranef_cor <- length(ranef_cor_names)
-  if(n_ranef_cor >= 1){
-    for(i in 1:n_ranef_cor){
-      var1_name <- strsplit(ranef_cor_names[i], split = "__")[[i]][2]
-      var2_name <- strsplit(ranef_cor_names[i], split = "__")[[i]][3]
-      posterior_df[paste("cov_ID", var1_name, var2_name, sep="__")] <- posterior_df[ranef_cor_names[i]]*
-        posterior_df[paste0("sd_ID__", var1_name)]*
-        posterior_df[paste0("sd_ID__", var2_name)]
-    }
-  }
-  
+    
   # If there is a link function convert as appropriate
   # Current implementation only allows for a lognormal link function
+  if(!is.null(resp)){
+    sigma_name <- paste0("sigma_", resp)
+  }
+  
+  else{
+    sigma_name <- "sigma"
+  }
   if(!is.null(link_func)){
     if(link_func == "log"){
       # Grab unconditional or "null" model intercept
       beta_00 <- fixef(null_model)[1,1]
-      posterior_df["sigma"] <- lognormal_link_func(beta_00, posterior_df["sigma"])
+      posterior_df[sigma_name] <- lognormal_link_func(beta_00, posterior_df[sigma_name])
     }
   }
   
-  final_names <- grepl("b_.*", colnames(posterior_df)) + 
-    grepl("var_ID__.*", colnames(posterior_df)) +
-    grepl("cov_ID__.*", colnames(posterior_df)) +
-    grepl("sigma", colnames(posterior_df))
+  if(!is.null(resp)){
+    final_names <- grepl(paste0("b_", resp, ".*"), colnames(posterior_df)) + 
+      grepl(paste0("bsp_", resp, "*"), colnames(posterior_df)) +
+      grepl(paste0("var_ID__", resp, ".*"), colnames(posterior_df)) +
+      grepl(paste0("cov_ID__", resp, ".*"), colnames(posterior_df)) +
+      grepl(paste0("sigma_", resp), colnames(posterior_df))
+  }
+  
+  else{
+    final_names <- grepl("b_.*", colnames(posterior_df)) + 
+      grepl("bsp_*", colnames(posterior_df)) +
+      grepl("var_ID__.*", colnames(posterior_df)) +
+      grepl("cov_ID__.*", colnames(posterior_df)) +
+      grepl("sigma", colnames(posterior_df))
+  }
   
   return(posterior_df[as.logical(final_names)])
 }
@@ -262,8 +303,15 @@ posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, r
   # Added some if/else logic here but honestly this needs a re-factor to catch all edge cases... 
   if(!is.null(within_vars)){
     within_vars_cols <- match(within_vars, colnames(df))
-    post_wth_vars <- paste0("b_", within_vars)
+    post_wth_vars <- c()
+    for(i in 1:length(within_vars)){
+      tmp_pattern <- paste0("b.*", within_vars[i])
+      tmp_name <- colnames(posterior_df)[grepl(tmp_pattern, colnames(posterior_df))]
+      tmp_name <- tmp_name[endsWith(tmp_name, within_vars[i])]
+      post_wth_vars <- c(post_wth_vars, tmp_name)
+    }
   }
+  
   else{
     within_vars_cols <- NULL
   }
@@ -286,7 +334,14 @@ posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, r
   if(has_intercept){
     random_vars <- c("Intercept", random_vars)
     between_vars <- c("Intercept", between_vars)
-    post_btw_vars <- paste0("b_", between_vars)
+  }
+  
+  post_btw_vars <- c()
+  for(i in 1:length(between_vars)){
+    tmp_pattern <- paste0("b.*_", between_vars[i])
+    tmp_name <- colnames(posterior_df)[grepl(tmp_pattern, colnames(posterior_df))]
+    tmp_name <- tmp_name[endsWith(tmp_name, between_vars[i])]
+    post_btw_vars <- c(post_btw_vars, tmp_name)
   }
   
   # Dynamically getting names for Tau matrix variables
@@ -301,7 +356,9 @@ posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, r
         post_tau_vars[i, j] <- post_var_names[i]
       }
       else{
-        tmp_cov_name <- paste0("cov_ID__", random_vars[i], "__", random_vars[j])
+        var_name1 <- strsplit(post_var_names[i], "__")[[1]][2]
+        var_name2 <- strsplit(post_var_names[j], "__")[[1]][2]
+        tmp_cov_name <- paste0("cov_ID__", var_name1, "__", var_name2)
         if(tmp_cov_name %in% colnames(posterior_df)){
           post_tau_vars[i, j] <- tmp_cov_name
           post_tau_vars[j, i] <- tmp_cov_name
@@ -309,16 +366,21 @@ posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, r
       }
     } 
   }
+  
+  sigma_name <- colnames(posterior_df)[grepl("sigma*", colnames(posterior_df))]
 
   if(class(df)  == "data.frame"){
+    #browser()
     cl <- parallel::makeCluster(N_CORES)
     doParallel::registerDoParallel(cl)
+    
+    
     post_var_decomp_out <- foreach(r = 1:nrow(posterior_df), .combine = rbind, .export = "r2MLM") %dopar% {
       gamma_w <- unlist(posterior_df[r, post_wth_vars])
       names(gamma_w) <- NULL
       gamma_b <- unlist(posterior_df[r, post_btw_vars])
       names(gamma_b) <-NULL
-      sigma <- posterior_df[r, "sigma"]
+      sigma <- posterior_df[r, sigma_name]
       tau <- matrix(nrow = nrow(post_tau_vars), ncol = ncol(post_tau_vars))
       
       # Extracting tau matrix values:
@@ -330,8 +392,8 @@ posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, r
       
       # Written to be re-factored if I want to expand beyond options available for clustermeancentered analyses
       # Currently all analyses include level 1 predictors that have been centered at the individual mean
-      r2mlm_out <- r2MLM(data=df, within_covs = within_vars_cols, between_covs = between_vars_cols, 
-                         random_covs = random_vars_cols, gamma_w = gamma_w, gamma_b = gamma_b, Tau = tau,
+      r2mlm_out <- r2MLM(data=df, within_covs = as.numeric(within_vars_cols), between_covs = as.numeric(between_vars_cols), 
+                         random_covs = as.numeric(random_vars_cols), gamma_w = gamma_w, gamma_b = gamma_b, Tau = tau,
                          sigma2 = sigma, has_intercept = has_intercept, clustermeancentered = clustermeancentered)
       
       decomp <- r2mlm_out$Decompositions
@@ -346,6 +408,7 @@ posterior_r2mlm_draws <- function(df, posterior_df, between_vars, within_vars, r
                  wthn_sig_varn = as.numeric(decomp["sigma2", "within"]),
                  btwn_fix_btwn = as.numeric(decomp["fixed, between", "between"]), 
                  btwn_int_varn = as.numeric(decomp["mean variation", "between"]))
+      
     }
     parallel::stopCluster(cl)
   }
