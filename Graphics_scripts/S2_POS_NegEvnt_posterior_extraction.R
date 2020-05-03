@@ -2,6 +2,7 @@ source("~/dr-consulting_GH/shackman-umd-pax-ema-pub/Graphics_scripts/bayes_varia
 
 POSTERIOR_PATH <- "/media/matthew/My Book/EMA_S2_Bayesian_Posteriors"
 DATA_FILEPATH <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Data/study2_data.RData"
+SUMMARY_DIR <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_2_model_summaries/"
 
 data_loader(POSTERIOR_PATH, "S2_POS_NegEvnt_x_DN_prop.NegEvnt", DATA_FILEPATH, "S2_POS_ucm")
 
@@ -20,6 +21,10 @@ full_model_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_va
                                         focal_model = S2_POS_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_POS_ucm, 
                                         has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_NegEvnt_x_DN.txt"))
+print(psych::describe(full_model_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
+
 # Just some memory saving...
 remove(list=c("S2_POS_NegEvnt_x_DN_prop.NegEvnt"))
 gc()
@@ -35,6 +40,9 @@ lv2_Exp_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_va
                                         focal_model = S2_POS_NegEvnt_DN_prop.NegEvnt, null_model=S2_POS_ucm, 
                                         has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_NegEvnt_DN_Exp.txt"))
+print(psych::describe(lv2_Exp_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_POS_NegEvnt_DN_prop.NegEvnt"))
@@ -51,6 +59,9 @@ lv2_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, 
                                     focal_model = S2_POS_NegEvnt_DN, null_model=S2_POS_ucm, 
                                     has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_NegEvnt_DN.txt"))
+print(psych::describe(lv2_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_POS_NegEvnt_DN"))
@@ -67,6 +78,10 @@ lv2_Exp_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars,
                                      focal_model = S2_POS_NegEvnt_prop.NegEvnt, null_model=S2_POS_ucm, 
                                      has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_NegEvnt_Exp.txt"))
+print(psych::describe(lv2_Exp_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
+
 # Just some memory saving...
 remove(list=c("S2_POS_NegEvnt_prop.NegEvnt"))
 gc()
@@ -82,6 +97,9 @@ lv1_only_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars
                                       focal_model = S2_POS_NegEvnt, null_model=S2_POS_ucm, 
                                       has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_NegEvnt.txt"))
+print(psych::describe(lv1_only_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 # Just some memory saving...
 remove(list=c("S2_POS_NegEvnt"))
 gc()
@@ -101,12 +119,12 @@ shared_DN_exp <- "mean(lv1_only[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_v
 # Could re-visit if I turn this into a more complete plotting package
 unmodeled_btwn <- "mean(full_model[['tot_int_varn']]) + mean(full_model[['tot_fix_btwn']]) - sum(between_decomp[1:3])"
 
-within_contrasts <- c("Positive \n Event" = event, 
+within_contrasts <- c("Negative \n Event" = event, 
                       "Reactivity \n" = reactivity, 
                       "Unmod. \n Within" = unmodeled)
 
 between_contrasts <- c("Tonic \n DN" = tonic_DN, 
-                       "Positive \n Event \n Exp." = exposure,
+                       "Negative \n Event \n Exp." = exposure,
                        "DN \n Shared w/ \n Exp." = shared_DN_exp,
                        "Unmod. \n Between" = unmodeled_btwn)
 

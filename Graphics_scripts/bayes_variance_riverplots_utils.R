@@ -196,10 +196,6 @@ r2MLM_brms_wrapper <- function(df, within_vars, between_vars, random_vars, focal
     r2mlm_posterior_samples <- posterior_r2mlm_draws(df, posterior_df, between_vars, within_vars, random_vars, 
                                                      has_intercept, clustermeancentered)
   }
-  # output text
-  sink(summary_filepath)
-  psych::describe(r2mlm_posterior_samples, skew=FALSE, quant=c(.025, .975))
-  sink()
   
   return(r2mlm_posterior_samples)
 }

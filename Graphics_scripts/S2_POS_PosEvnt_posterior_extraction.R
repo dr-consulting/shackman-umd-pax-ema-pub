@@ -2,6 +2,7 @@ source("~/dr-consulting_GH/shackman-umd-pax-ema-pub/Graphics_scripts/bayes_varia
 
 POSTERIOR_PATH <- "/media/matthew/My Book/EMA_S2_Bayesian_Posteriors"
 DATA_FILEPATH <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Data/study2_data.RData"
+SUMMARY_DIR <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_2_model_summaries/"
 
 data_loader(POSTERIOR_PATH, "S2_POS_PosEvnt_x_DN_prop.PosEvnt", DATA_FILEPATH, "S2_POS_ucm")
 
@@ -20,6 +21,10 @@ full_model_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_va
                                         focal_model = S2_POS_PosEvnt_x_DN_prop.PosEvnt, null_model=S2_POS_ucm, 
                                         has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_PosEvnt_x_DN.txt"))
+print(psych::describe(full_model_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
+
 # Just some memory saving...
 remove(list=c("S2_POS_PosEvnt_x_DN_prop.PosEvnt"))
 gc()
@@ -35,6 +40,9 @@ lv2_Exp_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_va
                                         focal_model = S2_POS_PosEvnt_DN_prop.PosEvnt, null_model=S2_POS_ucm, 
                                         has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_PosEvnt_DN_Exp.txt"))
+print(psych::describe(lv2_Exp_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_POS_PosEvnt_DN_prop.PosEvnt"))
@@ -51,6 +59,9 @@ lv2_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, 
                                     focal_model = S2_POS_PosEvnt_DN, null_model=S2_POS_ucm, 
                                     has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_PosEvnt_DN.txt"))
+print(psych::describe(lv2_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_POS_PosEvnt_DN"))
@@ -67,6 +78,10 @@ lv2_Exp_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars,
                                      focal_model = S2_POS_PosEvnt_prop.PosEvnt, null_model=S2_POS_ucm, 
                                      has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_PosEvnt_Exp.txt"))
+print(psych::describe(lv2_Exp_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
+
 # Just some memory saving...
 remove(list=c("S2_POS_PosEvnt_prop.PosEvnt"))
 gc()
@@ -82,6 +97,9 @@ lv1_only_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars
                                       focal_model = S2_POS_PosEvnt, null_model=S2_POS_ucm, 
                                       has_intercept = TRUE, clustermeancentered = TRUE)
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_POS_PosEvnt.txt"))
+print(psych::describe(lv1_only_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 # Just some memory saving...
 remove(list=c("S2_POS_PosEvnt"))
 gc()
@@ -128,7 +146,7 @@ riverplot_df_helper(model_variance_list, model_names, within_contrasts, between_
                     between_color = RColorBrewer::brewer.pal(9, "Blues")[5], 
                     merge_color = RColorBrewer::brewer.pal(9, "Purples")[5], 
                     custom_contrast_name = "Combined \n DN Effect", main_filename = "~/S2_POS_mood_PosEvnt_decomp.eps", 
-                    main_title = "Total Variance Decomposition: Negative Mood, DN, and Positive Events", 
+                    main_title = "Total Variance Decomposition: Positive Mood, DN, and Positive Events", 
                     custom_filename = "~/S2_POS_mood_PosEvnt_DN_combined.eps", 
-                    custom_title = "DN Variance Decomposition: Negative Mood, DN, and Positive Events", 
+                    custom_title = "DN Variance Decomposition: Positive Mood, DN, and Positive Events", 
                     combined_plot_filename = "~/S2_POS_mood_PosEvnt_full_decomp.eps")

@@ -19,8 +19,11 @@ random_vars <- c("c.NegEvnt")
 
 full_model_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
                                         focal_model = S2_NEG_NegEvnt_x_DN_prop.NegEvnt, null_model=S2_NEG_ucm,
-                                        summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_x_DN.txt"),
                                         has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
+
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_x_DN.txt"))
+print(psych::describe(full_model_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_NEG_NegEvnt_x_DN_prop.NegEvnt"))
@@ -34,10 +37,12 @@ between_vars <- c("c.DN", "prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 lv2_Exp_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                        focal_model = S2_NEG_NegEvnt_DN_prop.NegEvnt, null_model=S2_NEG_ucm,
-                                        summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_DN_Exp.txt"), 
+                                        focal_model = S2_NEG_NegEvnt_DN_prop.NegEvnt, null_model=S2_NEG_ucm, 
                                         has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_DN_Exp.txt"))
+print(psych::describe(lv2_Exp_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_NEG_NegEvnt_DN_prop.NegEvnt"))
@@ -51,10 +56,12 @@ between_vars <- c("c.DN")
 random_vars <- c("c.NegEvnt")
 
 lv2_DN_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                    focal_model = S2_NEG_NegEvnt_DN, null_model=S2_NEG_ucm, 
-                                    summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_DN.txt"),
+                                    focal_model = S2_NEG_NegEvnt_DN, null_model=S2_NEG_ucm,
                                     has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
 
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_DN.txt"))
+print(psych::describe(lv2_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_NEG_NegEvnt_DN"))
@@ -68,9 +75,12 @@ between_vars <- c("prop.NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 lv2_Exp_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                     focal_model = S2_NEG_NegEvnt_prop.NegEvnt, null_model=S2_NEG_ucm,
-                                     summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_Exp.txt"), 
+                                     focal_model = S2_NEG_NegEvnt_prop.NegEvnt, null_model=S2_NEG_ucm, 
                                      has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
+
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt_Exp.txt"))
+print(psych::describe(lv2_Exp_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_NEG_NegEvnt_prop.NegEvnt"))
@@ -84,9 +94,12 @@ between_vars <- NULL
 random_vars <- c("c.NegEvnt")
 
 lv1_only_decomp <- r2MLM_brms_wrapper(dat.study2_list, within_vars, between_vars, random_vars,
-                                      focal_model = S2_NEG_NegEvnt, null_model=S2_NEG_ucm, 
-                                      summary_filepath = paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt.txt"),
+                                      focal_model = S2_NEG_NegEvnt, null_model=S2_NEG_ucm,
                                       has_intercept = TRUE, clustermeancentered = TRUE, link_func = "log")
+
+sink(paste0(SUMMARY_DIR, "var_decomp_S2_NEG_NegEvnt.txt"))
+print(psych::describe(lv1_only_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+sink()
 
 # Just some memory saving...
 remove(list=c("S2_NEG_NegEvnt"))
