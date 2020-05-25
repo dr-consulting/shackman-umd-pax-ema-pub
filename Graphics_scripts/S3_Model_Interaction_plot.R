@@ -4,7 +4,7 @@ library(tidybayes)
 library(brms)
 
 DATA_FILEPATH <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Data/study3_data.RData"
-GRAPHICS_DIR <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/plot_outputs/"
+GRAPHICS_DIR <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/plot_outputs"
 load(DATA_FILEPATH)
 # IDs are made up - will assume new levels
 # Holding constant all other properties between the two groups
@@ -23,7 +23,7 @@ new_data <- data.frame(ID=c("PAX999", "PAX999", "PAX999", "PAX999", "PAX998", "P
 posterior_df <- posterior_predict(fit_log, newdata=new_data, allow_new_levels=TRUE)
 colnames(posterior_df) <- paste(new_data$DN_cat, new_data$cond_cat, sep="_")
 
-png(paste(GRAPHICS_DIR, "S3_Anx_Rating_DN_x_cond_ppd_interaction_plot_w_bars.png"), 
+png(paste0(GRAPHICS_DIR, "/S3_Anx_Rating_DN_x_cond_ppd_interaction_plot_w_bars.png"), 
     units = "in", width = 6, height = 6, res=300)
 posterior_df %>%
   as_tibble() %>% 
