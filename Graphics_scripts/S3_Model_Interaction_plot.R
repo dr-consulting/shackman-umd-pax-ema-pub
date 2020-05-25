@@ -34,22 +34,19 @@ posterior_df %>%
                names_sep = "_") %>% 
   mutate(cond_cat=fct_relevel(cond_cat, "Certain Safe", "Uncertain Safe", "Certain Threat", 
                               "Uncertain Threat")) %>% 
-  ggplot(aes(x=DN_cat, y=p_rating, fill=cond_cat))+
+  ggplot(aes(x=cond_cat, y=p_rating, fill=DN_cat))+
   geom_violin(alpha=.15)+
   stat_summary(fun=mean, geom="bar", alpha=.85, color="black", position=position_dodge(.9))+
   stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="pointrange", show.legend = FALSE)+
   stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="linerange", fun.args=list(.width=.8), 
                size=1.5, show.legend = FALSE)+
-  scale_fill_manual(values = c("Certain Safe"=RColorBrewer::brewer.pal(9, "Blues")[3],
-                               "Uncertain Safe"=RColorBrewer::brewer.pal(9, "Blues")[7],
-                               "Certain Threat"=RColorBrewer::brewer.pal(9, "Reds")[3],
-                               "Uncertain Threat"=RColorBrewer::brewer.pal(9, "Reds")[7]), 
-                    limits=c("Certain Safe", "Uncertain Safe", "Certain Threat", "Uncertain Threat"))+
+  scale_fill_manual(values = c("-1 SD"=RColorBrewer::brewer.pal(9, "Blues")[5],
+                               "+1 SD"=RColorBrewer::brewer.pal(9, "Reds")[5]))+
   theme_bw()+
   labs(y="Posterior Predicted Anxiety Rating", 
-       x="Dispositional Negativity", fill="Certainty/Threat Condition", 
+       x="MTC Condition", fill="Dispositional Negativity", 
        title = "Study 3 DN x Certainty/Threat Condition: Anxiety Rating")+
-  scale_x_discrete(limits=c("-1 SD", "+1 SD"))+
+  scale_x_discrete(limits=c("Certain Safe", "Uncertain Safe", "Certain Threat", "Uncertain Threat"))+
   theme(legend.position = "bottom")+
   guides(fill=guide_legend(title.position = "top", title.hjust = .5))+
   coord_cartesian(ylim=c(0, 6))
