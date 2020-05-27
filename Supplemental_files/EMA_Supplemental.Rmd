@@ -26,6 +26,7 @@ library(nFactors)
 library(papaja)
 library(kableExtra)
 library(lavaan)
+library(semTools)
 ```
 
 *Note*: will remove author page for submission.
@@ -818,6 +819,20 @@ anova(fit.CFA, fit.CFA11)
 ```
 
 Note that this is not an exhaustive test of the factor structure of these momentary mood items. There are certainly other reasonable model structures that were not tested here, especially considering the various ways one could specify the between-subjects and within-subjects models. Caveats aside, we see these analyses as a relatively robust effort to develop an appropriate measurement model for the set of mood items we collected during our EMA surveys.   
+
+### Reliability Measures
+
+```{r SuppAn4, message=FALSE}
+fit.CFA11<-sem(model = CFA.mod11, 
+             data=dat.CFA, 
+             cluster = 'ID', 
+             estimator = 'MLR')
+
+summary(fit.CFA11, 
+        standardized=TRUE, 
+        fit.measures=TRUE)
+semTools::reliability(fit.CFA11)
+```
 
 \pagebreak
 

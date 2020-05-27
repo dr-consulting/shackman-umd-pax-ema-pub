@@ -74,3 +74,9 @@ mod
 
 # Lastly getting alpha and omega from this analysis
 semTools::reliability(fit_CFA_c)
+
+pos_cols <- c("Jyfl", "Chrfl", "Hppy")
+neg_cols <- c("Nrvs", "Anxs", "Unesy")
+
+psych::multilevel.reliability(dat.study1_lv1[,c("ID", "Probe", neg_cols)], grp="ID", Time = "Probe", items = 2:4)
+  
