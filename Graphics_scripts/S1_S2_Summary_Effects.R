@@ -281,6 +281,9 @@ var_col_title <- ggdraw()+
   draw_label(
     "Variance Decomposition", 
     hjust = .5
+  ) +   
+  theme(
+        plot.margin = margin(0, 0, 0, 7)
   )
 
 
@@ -288,6 +291,9 @@ eff_col_title <- ggdraw()+
   draw_label(
     "Model Effects: Directionality/Credibility", 
     hjust = .5
+  )+   
+  theme(
+    plot.margin = margin(0, 0, 0, 7)
   )
 
 
