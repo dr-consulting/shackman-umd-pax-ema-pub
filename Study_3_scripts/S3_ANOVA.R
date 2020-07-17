@@ -40,4 +40,3 @@ loo_fit_log <- loo(fit_log, reloo=TRUE)
 # "Preferred" model is in the top row of output
 # Mutliply values in elpd_diff column by -2 to place on deviance scale 
 loo_compare(loo_fit, loo_fit_log)
-

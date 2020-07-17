@@ -40,32 +40,43 @@ new_data <- data.frame(ID=c("PAX999", "PAX999", "PAX998", "PAX998"),
 posterior_df <- posterior_predict(S1_NEG_PosEvnt_Rct, newdata=new_data, allow_new_levels=TRUE)[,,"NEG"]
 colnames(posterior_df) <- paste(new_data$DN_cat, new_data$PosEvnt_cat, sep="_")
 
-png(paste(GRAPHICS_DIR, "S1_NEG_DN_x_PosEvnt_ppd_interaction_plot_w_bars.png"), 
-    units = "in", width = 6, height = 6, res=300)
-posterior_df %>%
-  as_tibble() %>% 
-  select_all() %>% 
-  pivot_longer(cols = all_of(colnames(posterior_df)), 
-               values_to = "p_NEG", 
-               names_to = c("DN_cat", "PosEvnt_cat"), 
-               names_sep = "_") %>% 
-  ggplot(aes(x=PosEvnt_cat, y=p_NEG, fill=DN_cat))+
-  geom_violin(alpha=.15)+
-  stat_summary(fun=mean, geom="bar", alpha=.85, color="black", position=position_dodge(.9))+
-  stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="pointrange", show.legend = FALSE)+
-  stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="linerange", fun.args=list(.width=.8), 
-               size=1.5, show.legend = FALSE)+
-  scale_fill_manual(values = c("-1 SD"=RColorBrewer::brewer.pal(9, "Blues")[5], 
-                               "+1 SD"=RColorBrewer::brewer.pal(9, "Reds")[5]))+
-  theme_bw()+
-  labs(y="Posterior Predicted Negative Mood Composite", 
-       x="", fill="Dispostional Negativity Level", 
-       title = "Study 1 DN x Positive Event Interaction: Negative Mood")+
-  scale_x_discrete(limits=c("Low Intensity\nPositive Event", "High Intensity\nPositive Event"))+
-  theme(legend.position = "bottom")+
-  guides(fill=guide_legend(title.position = "top", title.hjust = .5))+
-  coord_cartesian(ylim=c(0, 6))
+S1_NEG_DN_x_PosEvnt_plot <- posterior_df %>%
+    as_tibble() %>% 
+    select_all() %>% 
+    pivot_longer(cols = all_of(colnames(posterior_df)), 
+                 values_to = "p_NEG", 
+                 names_to = c("DN_cat", "PosEvnt_cat"), 
+                 names_sep = "_") %>% 
+    mutate(
+      PosEvnt_cat = forcats::fct_relevel(PosEvnt_cat, c("Low Intensity\nPositive Event", 
+                                                        "High Intensity\nPositive Event"))
+    ) %>% 
+    ggplot(aes(x=DN_cat, y=p_NEG, fill=PosEvnt_cat))+
+    geom_violin(alpha=.15)+
+    stat_summary(fun=mean, geom="bar", alpha=.85, color="black", position=position_dodge(.9))+
+    stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="pointrange", show.legend = FALSE)+
+    stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="linerange", fun.args=list(.width=.8), 
+                 size=1.5, show.legend = FALSE)+
+    scale_fill_manual(values = c("Low Intensity\nPositive Event"=RColorBrewer::brewer.pal(9, "Blues")[5], 
+                                 "High Intensity\nPositive Event"=RColorBrewer::brewer.pal(9, "Reds")[5]))+
+    theme_bw()+
+    labs(y="Posterior Predicted Negative Mood Composite", 
+         x="Dispositional Negativity Score", fill="Positive Event Rating", 
+         title = "Study 1 DN x Positive Event Interaction: Negative Mood")+
+    scale_x_discrete(limits=c("-1 SD", "+1 SD"))+
+    theme(legend.position = "bottom")+
+    guides(fill=guide_legend(title.position = "top", title.hjust = .5))+
+    coord_cartesian(ylim=c(0, 6))
 
+# Save png version of plot
+png(paste(GRAPHICS_DIR, "S1_NEG_DN_x_PosEvnt_ppd_interaction_plot_w_bars.png"), units = "in", width = 6, height = 6, 
+    res=300)  
+S1_NEG_DN_x_PosEvnt_plot
+dev.off()
+
+# Save postscript (.eps) version of plot
+postscript(paste(GRAPHICS_DIR, "S1_NEG_DN_x_PosEvnt_ppd_interaction_plot_w_bars.eps"), width = 6, height = 6)  
+S1_NEG_DN_x_PosEvnt_plot
 dev.off()
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -73,30 +84,41 @@ dev.off()
 posterior_df <- posterior_predict(S1_POS_PosEvnt_Rct, newdata=new_data, allow_new_levels=TRUE)[,,"POS"]
 colnames(posterior_df) <- paste(new_data$DN_cat, new_data$PosEvnt_cat, sep="_")
 
-png(paste0(GRAPHICS_DIR, "S1_POS_DN_x_PosEvnt_ppd_interaction_plot_w_bars.png"), 
-    units = "in", width = 6, height = 6, res=300)
-posterior_df %>%
+S1_POS_DN_x_PosEvnt_plot <- posterior_df %>%
   as_tibble() %>% 
   select_all() %>% 
   pivot_longer(cols = all_of(colnames(posterior_df)), 
                values_to = "p_POS", 
                names_to = c("DN_cat", "PosEvnt_cat"), 
                names_sep = "_") %>% 
-  ggplot(aes(x=PosEvnt_cat, y=p_POS, fill=DN_cat))+
+  mutate(
+    PosEvnt_cat = forcats::fct_relevel(PosEvnt_cat, c("Low Intensity\nPositive Event", 
+                                                      "High Intensity\nPositive Event"))
+  ) %>% 
+  ggplot(aes(x=DN_cat, y=p_POS, fill=PosEvnt_cat))+
   geom_violin(alpha=.15)+
   stat_summary(fun=mean, geom="bar", alpha=.85, color="black", position=position_dodge(.9))+
   stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="pointrange", show.legend = FALSE)+
   stat_summary(fun.data=mean_hdci, position=position_dodge(.9), geom="linerange", fun.args=list(.width=.8), 
                size=1.5, show.legend = FALSE)+
-  scale_fill_manual(values = c("-1 SD"=RColorBrewer::brewer.pal(9, "Blues")[5], 
-                               "+1 SD"=RColorBrewer::brewer.pal(9, "Reds")[5]))+
+  scale_fill_manual(values = c("Low Intensity\nPositive Event"=RColorBrewer::brewer.pal(9, "Blues")[5], 
+                               "High Intensity\nPositive Event"=RColorBrewer::brewer.pal(9, "Reds")[5]))+
   theme_bw()+
   labs(y="Posterior Predicted Positive Mood Composite", 
-       x="", fill="Dispostional Negativity Level", 
+       x="Dispositional Negativity Score", fill="Positive Event Rating", 
        title = "Study 1 DN x Positive Event Interaction: Positive Mood")+
-  scale_x_discrete(limits=c("Low Intensity\nPositive Event", "High Intensity\nPositive Event"))+
+  scale_x_discrete(limits=c("-1 SD", "+1 SD"))+
   theme(legend.position = "bottom")+
   guides(fill=guide_legend(title.position = "top", title.hjust = .5))+
   coord_cartesian(ylim=c(0, 6))
 
+# Save png version of plot
+png(paste(GRAPHICS_DIR, "S1_POS_DN_x_PosEvnt_ppd_interaction_plot_w_bars.png"), units = "in", width = 6, height = 6, 
+    res=300)  
+S1_POS_DN_x_PosEvnt_plot
+dev.off()
+
+# Save postscript (.eps) version of plot
+postscript(paste(GRAPHICS_DIR, "S1_POS_DN_x_PosEvnt_ppd_interaction_plot_w_bars.eps"), width = 6, height = 6)  
+S1_POS_DN_x_PosEvnt_plot
 dev.off()
