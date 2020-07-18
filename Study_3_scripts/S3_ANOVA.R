@@ -24,7 +24,7 @@ loo_fit <- loo(fit, reloo=TRUE)
 # better predicts the posterior distribution.
 
 anova_form_log <- bf(
-	rating ~ certainty*valence*DN+ (1|ID)
+	rating ~ valence*DN+ (1|ID)
 ) + lognormal()
 
 fit_log <- brm(anova_form_log, data = dat.study3, 
