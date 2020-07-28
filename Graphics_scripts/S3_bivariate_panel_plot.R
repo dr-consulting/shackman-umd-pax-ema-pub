@@ -34,8 +34,8 @@ threat_fit <- regression(df_threat, "DN", "anx_rating")
 safe_fit <- regression(df_safe, "DN", "anx_rating")
 
 g1 <- ggplot(data = df_threat, aes(x = DN, y = anx_rating)) +
-    geom_point(color = RColorBrewer::brewer.pal(9, "Blues")[5]) +
-    stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5]) +
+    geom_point(color = RColorBrewer::brewer.pal(9, "Reds")[5]) +
+    stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Blues")[5]) +
     labs(y = "Anxiety Rating During 'Threat' Trials", 
          x = "Standardized DN Scores", 
          title = "") +
@@ -50,7 +50,8 @@ g1 <- ggplot(data = df_threat, aes(x = DN, y = anx_rating)) +
     theme_bw() +
     theme(axis.title.x = element_blank(), 
           axis.text.x = element_blank(), 
-          axis.ticks.x = element_blank())
+          axis.ticks.x = element_blank(), 
+          axis.title.y = element_text(color = RColorBrewer::brewer.pal(9, "Reds")[5]))
 
 g2 <- ggplot(data = df_safe, aes(x = DN, y = anx_rating)) +
     geom_point(color = RColorBrewer::brewer.pal(9, "Blues")[5]) +
@@ -66,11 +67,12 @@ g2 <- ggplot(data = df_safe, aes(x = DN, y = anx_rating)) +
                    y = label_pos(.5, 4.5, .9), 
                    label = paste("R^2 ==", as.character(R2))), 
                parse = TRUE) +
-    theme_bw()
+    theme_bw() +
+    theme(axis.title.y = element_text(color = RColorBrewer::brewer.pal(9, "Blues")[5]))
 
 
-g <- plot_grid(ggMarginal(g1, margins = "both", type = "histogram", fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
-          ggMarginal(g2, margins = "y", type = "histogram", fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
+g <- plot_grid(ggMarginal(g1, margins = "both", type = "histogram", fill = RColorBrewer::brewer.pal(9, "Purples")[5]), 
+          ggMarginal(g2, margins = "y", type = "histogram", fill = RColorBrewer::brewer.pal(9, "Purples")[5]), 
           nrow = 2, align = "hv", axis = "tbl", labels = c("a.", "b."), 
           rel_heights = c(1, 5/6))
 
