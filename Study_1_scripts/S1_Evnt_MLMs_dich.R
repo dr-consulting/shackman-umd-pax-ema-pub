@@ -10,10 +10,11 @@
 #   negative affect completed at two separate timepoints and in two different contexts. 
 
 # Modeling Notes: 
-#   * Exploratory analyses revealed that negative event ratings were positively skewed, thus a 
-#   weakly informative lognormal prior was chosen for the negative event model
-#   * Missingness was addressed at runtime by taking draws from the posterior predictive 
-#   distribution
+#   * In this analysis, negative and positive event ratings have been transformed from a 5-point 
+#   to a dichotomous scale. The value 1 represented "no" an event did not occur. All other values
+#   were set to "yes" an event did occur. 
+#   * Missingness was addressed using 10 imputed data sets. Script for imputation generation is
+#   available in the repo
 ###################################################################################################
 
 #--------------------------------------------------------------------------------------------------
@@ -101,6 +102,7 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 remove("S1_NegEvnt_DN")
+gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 
@@ -160,3 +162,4 @@ cowplot::plot_grid(ppc_hist,
 
 dev.off()
 remove("S1_PosEvnt_DN")
+gc()
