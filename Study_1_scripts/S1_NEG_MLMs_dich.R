@@ -1,29 +1,7 @@
 ###################################################################################################
 # Study 1 Modeling Script: Negative Mood Models
 
-# Description: 
-#   The analyses below involve a series of increasingly complex Bayesian multilevel regression 
-#   models. The analyses addressed three broad research questions designed to provide a better 
-#   understanding of the association between dispositional negativity and momentary 
-#   negative affect:
-#     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
-#     negativity and momentary negative affect? 
-#     2. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary negative affect that can attributed to differences in overall emotional context? 
-#     3. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary negative affect that can be attributed to reactivity to recent emotionally salient 
-#     events?
-
-# Modeling Notes: 
-#   * Exploratory analyses revealed that negative mood ratings were positively skewed, thus a 
-#   weakly informative lognormal prior was chosen for these negative mood scores
-#   * Missingness was addressed at runtime by taking draws from the posterior predictive 
-#   distribution - for both continuous predictors and momentary negative mood scores
-#   * To generate a more informative posterior predictive distribution in the missingness models, 
-#   we included summary scores of the EMA - (see: S1_PosEvnt_miss and S1_NegEvnt_miss)
-#   * NEG is mainly an aggregate of anxious mood - a limitation addressed in Study 2 
-#   * Event ratings were individually mean-centered to maintain separation of between- and within-
-#   subjects sources of variation in negative mood
+# TODO: UPDATE THIS SECTION WITH NEW DESCRIPTION OF MODELS
 ###################################################################################################
 
 #--------------------------------------------------------------------------------------------------
@@ -37,73 +15,57 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 #--------------------------------------------------------------------------------------------------
 
-
 #--------------------------------------------------------------------------------------------------
 # Location of repo stored locally
 wd <- '~/github/ATNL/shackman-umd-pax-ema-pub'
 data.folder <- '{wd}/Data' %>% glue()
-study1.model <- '{wd}/Study1_model_summaries' %>% glue()
+study1.model <- '{wd}/Study_1_model_summaries' %>% glue()
 
 # Will save very large posterior files from analyses (not recommended for git repo)
 # For anyone attempting to reproduce these analyses be sure to identify a storage location with sufficient memory
-posterior_save_dir <- "/media/dr-owner/HDD1/"
+posterior_save_dir <- "/media/dr-owner/HDD1"
 study1.out <- '{posterior_save_dir}/EMA_S1_Bayesian_Posteriors' %>% glue()
 
 # Also generally not recommended to store image files on GH... 
-study1.graphics <- '{posterior_save_dir}/EMA_S1_Graphics'
+study1.graphics <- '{study1.out}/diagnostic_plots' %>% glue()
 #--------------------------------------------------------------------------------------------------
-
+# source local utility functions
+source('{wd}/utils.R' %>%  glue())
 #--------------------------------------------------------------------------------------------------
-# Loading Study 1 Data (from Emotion MS - Shackman et al. 2017)
 load('{data.folder}/study1_data.RData' %>% glue())
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 # Initial null intercept model - will be necessary to generate final variance estimates
 # Note the lognonrmal() prior for the intercept - due to positive skew of negative mood ratings NEG
 S1_NEG_ucm_form <- bf(
-  NEG | mi() ~ 1 + (1|ID)
+  NEG ~ 1 + (1|ID)
 )+lognormal()
 
 # Running model with priors (see above)
-S1_NEG_ucm <- brm_multiple(S1_NEG_ucm_form,
-                           data = dat.study1_list, 
-                           chains = 3,
-                           iter = 15000,
-                           warmup = 10000, 
-                           control = list(adapt_delta = .99, 
-                                          max_treedepth = 15))
+S1_NEG_ucm <- brm_multiple(
+  S1_NEG_ucm_form,
+  data = dat.study1_list, 
+  chains = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 1171867, 
+  save_all_pars = TRUE, 
+  save_model = 'S1_NEG_ucm', 
+  open_progress = FALSE, 
+  refresh = 0
+)
+
+save(list = c("S1_NEG_ucm", "dat.study1_list", "dat.study1_model"), 
+     file = '{study1.out}/S1_NegEvnt_DN_dich.RData' %>% glue()) 
 
 sink(paste0(study1.model, '/S1_NEG_ucm.txt'))
 print(summary(S1_NEG_ucm), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S1_NEG_ucm, 
-           newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
-           nsamples = 100)+
-  ggtitle("S1_NEG_ucm Posterior Predictive Distribution")
+create_diagnostic_plots(S1_NEG_ucm, dat.study1_list, n_samples = 100, dir_path = study1.graphics)
 
-ppc_hist <- 
-  pp_check(S1_NEG_ucm, 
-           newdata = dat.study1_model[!is.na(dat.study1_model$NEG),],
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S1_NEG_ucm Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study1.graphics, '/S1_NEG_ucm_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-
-dev.off()
-
-save(file=paste0(study1.out, "/S1_NEG_ucm.RData"), 
-     list=c("S1_NEG_ucm", "S1_NEG_ucm_form"))
 remove(list=c("S1_NEG_ucm", "S1_NEG_ucm_form"))
 gc()
 
