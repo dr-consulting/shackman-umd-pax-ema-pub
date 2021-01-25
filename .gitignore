@@ -2,3 +2,5 @@
 *.png
 *.doc
 *.docx
+*.RData
+*.rda
