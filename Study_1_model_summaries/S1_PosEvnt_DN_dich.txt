@@ -1,6 +1,6 @@
- Family: lognormal 
-  Links: mu = identity; sigma = identity 
-Formula: NEG ~ 1 + (1 | ID) 
+ Family: bernoulli 
+  Links: mu = logit 
+Formula: PosEvnt_dich ~ 1 + c.DN + (1 | ID) 
    Data: dat.study1_list (Number of observations: 8890) 
 Samples: 30 chains, each with iter = 15000; warmup = 10000; thin = 1;
          total post-warmup samples = 150000
@@ -8,15 +8,12 @@ Samples: 30 chains, each with iter = 15000; warmup = 10000; thin = 1;
 Group-Level Effects: 
 ~ID (Number of levels: 127) 
               Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sd(Intercept)  0.32556   0.02143  0.28645  0.37039 1.01638     1725    21029
+sd(Intercept)  1.63362   0.15413  1.36206  1.96250 1.13314      143      705
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-Intercept  0.43132   0.02932  0.37336  0.48840 1.00623     5034    10221
-
-Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sigma  0.42558   0.00905  0.41087  0.44706 2.40529       36       64
+Intercept  3.00810   0.17470  2.67947  3.36528 1.07511      244     1137
+c.DN       0.12403   0.16640 -0.20525  0.44695 1.06013      298     1939
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

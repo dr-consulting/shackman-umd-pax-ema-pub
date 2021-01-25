@@ -8,7 +8,7 @@ N_CORES <- parallel::detectCores()-2 # for my workstation this gets me 10 cores
 # r2MLM below created by Rights and Sterba
 # https://my.vanderbilt.edu/jasonrights/software/r2mlm/
 
-r2MLM <- function(data, within_covs ,between_covs, random_covs, gamma_w, gamma_b, Tau, sigma2, has_intercept=TRUE, 
+r2MLM <- function(data, within_covs, between_covs, random_covs, gamma_w, gamma_b, Tau, sigma2, has_intercept=TRUE, 
                   clustermeancentered=TRUE){
   if(has_intercept==T){
     if(length(gamma_b)>1) gamma <- c(1,gamma_w,gamma_b[2:length(gamma_b)])

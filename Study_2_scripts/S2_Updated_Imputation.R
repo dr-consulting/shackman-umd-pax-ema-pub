@@ -3,13 +3,13 @@
 
 # Description: 
 #   Most of this script involves a data preparation and cleaning. First summary values were 
-#   were generated for the relevant EMA variables and these summary variables utlimately formed the 
+#   were generated for the relevant EMA variables and these summary variables ultimately formed the 
 #   basis for generating posterior distributions for each individual using a series of multilevel
 #   imputation models. 
 
 # Modeling Notes: 
 #   Efforts to re-create these analyses are best done on a machine with sufficient memory and the 
-#   user would likely benefit from running in an indepedent terminal if s/he wants to be able to 
+#   user would likely benefit from running in an independent terminal if s/he wants to be able to 
 #   continue separate lines of development/coding work. 
 ####################################################################################################
 
