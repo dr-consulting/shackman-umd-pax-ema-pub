@@ -54,17 +54,17 @@ fml <- NegEvnt_f + PosEvnt_f + Chrfl_f + Hppy_f + Jyfl_f + Nrvs_f + Anxs_f + Une
 M <- 10
 
 impute_wrapper <- function(i) {
-  imp_df <- jomoImpute(
-    dat.study1_model, 
-    formula = fml, 
-    n.burn = 5000, 
-    n.iter = 199, # because it is prime and I like primes :) 
-    m = 1, 
-    keep.chains = 'diagonal',
-    seed = 18591124)
-
-  save(list = c('imp_df'),
-	   file = '{data.folder}/study1_data_imp_{i}.RData' %>% glue())
+    imp_df <- jomoImpute(
+        dat.study1_model, 
+        formula = fml, 
+        n.burn = 5000, 
+        n.iter = 199, # because it is prime and I like primes :) 
+        m = 1, 
+        keep.chains = 'diagonal'
+    )
+    
+    save(list = c('imp_df'),
+         file = '{data.folder}/study1_data_imp_{i}.RData' %>% glue())
 }
 
 mclapply(1:M, mc.cores = M, FUN = impute_wrapper)

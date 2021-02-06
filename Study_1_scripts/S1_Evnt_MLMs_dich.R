@@ -45,7 +45,7 @@ study1.graphics <- '{study1.out}/diagnostic_plots' %>% glue()
 # source local utility functions
 source('{wd}/utils.R' %>%  glue())
 #--------------------------------------------------------------------------------------------------
-load('{data.folder}/study1_data_probationary.RData' %>% glue())
+load('{data.folder}/study1_data.RData' %>% glue())
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
 # Simple Event Models:
