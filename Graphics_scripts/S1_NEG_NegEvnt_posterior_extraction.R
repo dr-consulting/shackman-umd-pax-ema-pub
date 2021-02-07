@@ -5,8 +5,7 @@ DATA_FILEPATH <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors/gamma/s1_base_
 SUMMARY_DIRPATH <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors/gamma/test_outputs"
 data_loader(POSTERIOR_PATH, "S1_NEG_NegEvnt_Rct", DATA_FILEPATH, "S1_NEG_ucm")
 
-# Create interaction variable in dat.study2_list (may make a small helper for this eventually)
-dat.study1_model[["c.NegEvnt:c.DN"]] <- dat.study1_model[["c.NegEvnt"]] * dat.study1_model[["c.DN"]]
+
 
 #----------------------------------------------------------------------------------------------------------------------
 summary_filepath <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors/gamma/test_outputs/var_decomp_S1_NEG_NegEvnt_x_DN.txt"
@@ -15,6 +14,10 @@ between_vars <- c("c.DN", "prop_NegEvnt")
 random_vars <- c("c.NegEvnt")
 
 posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt_Rct, obs_lvl_var="gamma")
+
+# Create interaction variable in dat.study2_list (may make a small helper for this eventually)
+dat.study1_model <- base_df
+dat.study1_model[["c.NegEvnt:c.DN"]] <- dat.study1_model[["c.NegEvnt"]] * dat.study1_model[["c.DN"]]
 
 full_model_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
                                            has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gamma")
@@ -39,6 +42,7 @@ random_vars <- c("c.NegEvnt")
 
 posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt_DN_Exp, obs_lvl_var="gamma")
 
+
 lv2_Exp_DN_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
                                            has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gamma")
 sink(summary_filepath)
@@ -52,15 +56,16 @@ gc()
 #----------------------------------------------------------------------------------------------------------------------
 # Next Set of inputs - only DN at level 2 of the equation
 data_loader(POSTERIOR_PATH, "S1_NEG_NegEvnt_DN")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_NEG_NegEvnt_DN.txt"
+dat.study1_model <- base_df
+summary_filepath <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors/gamma/test_outputs/var_decomp_S1_NEG_NegEvnt_DN.txt"
 within_vars <- c("c.NegEvnt")
 between_vars <- c("c.DN")
 random_vars <- c("c.NegEvnt")
 
-posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt_DN, link_func="log", resp="NEG")
+posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt_DN, obs_lvl_var="gamma")
 
 lv2_DN_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                       has_intercept=TRUE, clustermeancentered=TRUE)
+                                       has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gamma")
 sink(summary_filepath)
 print(psych::describe(lv2_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
 sink()
@@ -72,15 +77,16 @@ gc()
 #----------------------------------------------------------------------------------------------------------------------
 # Next Set of inputs - lv2 no interaction
 data_loader(POSTERIOR_PATH, "S1_NEG_NegEvnt_Exp")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_NEG_NegEvnt_Exp.txt"
+dat.study1_model <- base_df
+summary_filepath <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors/gamma/test_outputs/var_decomp_S1_NEG_NegEvnt_Exp.txt"
 within_vars <- c("c.NegEvnt")
-between_vars <- c("m.NegEvnt")
+between_vars <- c("prop_NegEvnt")
 random_vars <- c("c.NegEvnt")
 
-posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt_Exp, link_func="log", resp="NEG")
+posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt_Exp, obs_lvl_var="gamma")
 
 lv2_Exp_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                        has_intercept=TRUE, clustermeancentered=TRUE)
+                                        has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gamma")
 sink(summary_filepath)
 print(psych::describe(lv2_Exp_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
 sink()
@@ -91,15 +97,16 @@ gc()
 #----------------------------------------------------------------------------------------------------------------------
 # Next Set of inputs - lv1 only - no level 2 predictors of any kind
 data_loader(POSTERIOR_PATH, "S1_NEG_NegEvnt")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_NEG_NegEvnt.txt"
+dat.study1_model <- base_df
+summary_filepath <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors/gamma/test_outputs/var_decomp_S1_NEG_NegEvnt.txt"
 within_vars <- c("c.NegEvnt")
 between_vars <- NULL
 random_vars <- c("c.NegEvnt")
 
-posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt, link_func="log", resp="NEG")
+posterior_df <- posterior_samples_extractor(S1_NEG_ucm, S1_NEG_NegEvnt, obs_lvl_var="gamma")
 
 lv1_only_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                           has_intercept=TRUE, clustermeancentered=TRUE)
+                                         has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gamma")
 sink(summary_filepath)
 print(psych::describe(lv1_only_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
 sink()
