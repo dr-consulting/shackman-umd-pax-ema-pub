@@ -3,4 +3,5 @@
 *.doc
 *.docx
 *.RData
+*.rdata
 *.rda
