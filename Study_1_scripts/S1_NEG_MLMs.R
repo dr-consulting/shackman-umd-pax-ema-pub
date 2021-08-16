@@ -84,9 +84,9 @@ S1_NEG_ucm_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_ucm <- brm(
+S1_NEG_ucm <- brm_multiple(
   S1_NEG_ucm_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -128,9 +128,9 @@ S1_NEG_NegEvnt_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_NegEvnt <- brm(
+S1_NEG_NegEvnt <- brm_multiple(
   S1_NEG_NegEvnt_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -164,9 +164,9 @@ S1_NEG_PosEvnt_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_PosEvnt <- brm(
+S1_NEG_PosEvnt <- brm_multiple(
   S1_NEG_PosEvnt_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -202,9 +202,9 @@ S1_NEG_NegEvnt_DN_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_NegEvnt_DN <- brm(
+S1_NEG_NegEvnt_DN <- brm_multiple(
   S1_NEG_NegEvnt_DN_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -242,9 +242,9 @@ S1_NEG_PosEvnt_DN_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_PosEvnt_DN <- brm(
+S1_NEG_PosEvnt_DN <- brm_multiple(
   S1_NEG_PosEvnt_DN_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -280,9 +280,9 @@ S1_NEG_NegEvnt_Exp_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_NegEvnt_Exp <- brm(
+S1_NEG_NegEvnt_Exp <- brm_multiple(
   S1_NEG_NegEvnt_Exp_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -318,9 +318,9 @@ S1_NEG_PosEvnt_Exp_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_PosEvnt_Exp <- brm(
+S1_NEG_PosEvnt_Exp <- brm_multiple(
   S1_NEG_PosEvnt_Exp_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -356,9 +356,9 @@ S1_NEG_NegEvnt_DN_Exp_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_NegEvnt_DN_Exp <- brm(
+S1_NEG_NegEvnt_DN_Exp <- brm_multiple(
   S1_NEG_NegEvnt_DN_Exp_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -394,9 +394,9 @@ S1_NEG_PosEvnt_DN_Exp_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_PosEvnt_DN_Exp <- brm(
+S1_NEG_PosEvnt_DN_Exp <- brm_multiple(
   S1_NEG_PosEvnt_DN_Exp_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -432,9 +432,9 @@ S1_NEG_NegEvnt_Rct_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_NegEvnt_Rct <- brm(
+S1_NEG_NegEvnt_Rct <- brm_multiple(
   S1_NEG_NegEvnt_Rct_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,
@@ -470,9 +470,9 @@ S1_NEG_PosEvnt_Rct_form <- bf(
 ) + Gamma(link = "log")
 
 # Running model with priors (see above)
-S1_NEG_PosEvnt_Rct <- brm(
+S1_NEG_PosEvnt_Rct <- brm_multiple(
   S1_NEG_PosEvnt_Rct_form,
-  data = dat.study1_list[[1]], 
+  data = dat.study1_list, 
   chains = 3,
   cores = 3,
   iter = 15000,

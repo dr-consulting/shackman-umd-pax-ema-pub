@@ -1,121 +1,162 @@
-source("~/dr-consulting_GH/shackman-umd-pax-ema-pub/Graphics_scripts/bayes_variance_riverplots_utils.R")
+source("~/github/ATNL/shackman-umd-pax-ema-pub/Graphics_scripts/bayes_variance_riverplots_utils.R")
+library(glue)
+library(plyr)
+library(tidyverse)
 
-POSTERIOR_PATH <- "/media/matthew/My Book/EMA_S1_Bayesian_Posteriors"
-DATA_FILEPATH <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Data/study1_data.RData"
-SUMMARY_DIRPATH <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/"
-data_loader(POSTERIOR_PATH, "S1_POS_PosEvnt_Rct", DATA_FILEPATH, "S1_POS_ucm")
+# To ensure stable output in text files up to reasonable "wide-screen" width
+options(width = 140)
 
-# Create interaction variable in dat.study2_list (may make a small helper for this eventually)
-dat.study1_model["c.PosEvnt:c.DN"] <- dat.study1_model["c.PosEvnt"]*dat.study1_model["c.DN"]
+BASE_DIR <- "/media/dr-owner/HDD1/EMA_S1_Bayesian_Posteriors"
+POSTERIOR_DIR <- "{BASE_DIR}/gaussian" %>% glue()
+DATA_FILEPATH <- "~/github/ATNL/shackman-umd-pax-ema-pub/Data/study1_data.RData"
 
-#----------------------------------------------------------------------------------------------------------------------
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_POS_PosEvnt_x_DN.txt"
-within_vars <- c("c.PosEvnt", "c.PosEvnt:c.DN")
-between_vars <- c("c.DN", "m.PosEvnt")
-random_vars <- c("c.PosEvnt")
+SUMMARY_DIR <- "{BASE_DIR}/gaussian/var_decomp_txt" %>% glue()
+if(!dir.exists(SUMMARY_DIR)) dir.create(SUMMARY_DIR, recursive = TRUE)
 
+GRAPHICS_DIR <- "{BASE_DIR}/gaussian/riverplots" %>% glue()
+if(!dir.exists(GRAPHICS_DIR)) dir.create(GRAPHICS_DIR, recursive = TRUE)
 
-posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_Rct, resp="POS")
+LOAD_PATH <- "{GRAPHICS_DIR}/S1_POS_PosEvnt_river_base.RData" %>% glue()
+EXECUTE_FLAG <- !file.exists(LOAD_PATH)
 
-full_model_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                           has_intercept=TRUE, clustermeancentered=TRUE)
+data_loader(POSTERIOR_DIR, "S1_POS_PosEvnt_Rct", DATA_FILEPATH, "S1_POS_ucm")
 
-sink(summary_filepath)
-print(psych::describe(full_model_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
-sink()
+if(EXECUTE_FLAG) {
+    #----------------------------------------------------------------------------------------------------------------------
+    # Pre-processing
+    # Create imputed mean data.frame
+    # Averages any imputed missing values and returns a single summary data.frame of all required variables
+    mean_imputed_df <- Reduce(`+`, dat.study1_list) / length(dat.study1_list)
+    
+    # Create a negative event interaction term with the correct label: 
+    mean_imputed_df[['c.PosEvnt:c.DN']] <- mean_imputed_df[['c.PosEvnt']] * mean_imputed_df[['c.DN']]
+    
+    #----------------------------------------------------------------------------------------------------------------------
+    summary_filepath <- "{SUMMARY_DIR}/var_decomp_S1_POS_PosEvnt_x_DN.txt" %>% glue()
+    within_vars <- c("c.PosEvnt", "c.PosEvnt:c.DN")
+    between_vars <- c("c.DN", "prop_PosEvnt")
+    random_vars <- c("c.PosEvnt")
+    
+    posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_Rct, obs_lvl_var="gaussian")
+    
+    full_model_decomp <- posterior_r2mlm_draws(mean_imputed_df, posterior_df, between_vars, within_vars, random_vars, 
+                                               has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gaussian")
+    
+    sink(summary_filepath)
+    print(psych::describe(full_model_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+    sink()
+    
+    # Just some memory saving...
+    remove(list=c("S1_POS_PosEvnt_Rct"))
+    gc()
+    
+    #----------------------------------------------------------------------------------------------------------------------
+    # Next Set of inputs - lv2 no interaction
+    data_loader(POSTERIOR_DIR, "S1_POS_PosEvnt_DN_Exp")
+    summary_filepath <- "{SUMMARY_DIR}/var_decomp_S1_POS_PosEvnt_DN_Exp.txt" %>% glue()
+    within_vars <- c("c.PosEvnt")
+    between_vars <- c("c.DN", "prop_PosEvnt")
+    random_vars <- c("c.PosEvnt")
+    
+    posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_DN_Exp, obs_lvl_var="gaussian")
+    
+    lv2_Exp_DN_decomp <- posterior_r2mlm_draws(mean_imputed_df, posterior_df, between_vars, within_vars, random_vars, 
+                                               has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gaussian")
+    
+    sink(summary_filepath)
+    print(psych::describe(lv2_Exp_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+    sink()
+    
+    # Just some memory saving...
+    remove(list=c("S1_POS_PosEvnt_DN_Exp"))
+    gc()
+    
+    #----------------------------------------------------------------------------------------------------------------------
+    # Next Set of inputs - only DN at level 2 of the equation
+    data_loader(POSTERIOR_DIR, "S1_POS_PosEvnt_DN")
+    summary_filepath <- "{SUMMARY_DIR}/var_decomp_S1_POS_PosEvnt_DN.txt" %>% glue()
+    within_vars <- c("c.PosEvnt")
+    between_vars <- c("c.DN")
+    random_vars <- c("c.PosEvnt")
+    
+    posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_DN, obs_lvl_var="gaussian")
+    
+    lv2_DN_decomp <- posterior_r2mlm_draws(mean_imputed_df, posterior_df, between_vars, within_vars, random_vars, 
+                                           has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gaussian")
+    
+    sink(summary_filepath)
+    print(psych::describe(lv2_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+    sink()
+    
+    # Just some memory saving...
+    remove(list=c("S1_POS_PosEvnt_DN"))
+    gc()
+    
+    #----------------------------------------------------------------------------------------------------------------------
+    # Next Set of inputs - lv2 no interaction
+    data_loader(POSTERIOR_DIR, "S1_POS_PosEvnt_Exp")
+    summary_filepath <- "{SUMMARY_DIR}/var_decomp_S1_POS_PosEvnt_Exp.txt" %>% glue()
+    within_vars <- c("c.PosEvnt")
+    between_vars <- c("prop_PosEvnt")
+    random_vars <- c("c.PosEvnt")
+    
+    posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_Exp, obs_lvl_var="gaussian")
+    
+    lv2_Exp_decomp <- posterior_r2mlm_draws(mean_imputed_df, posterior_df, between_vars, within_vars, random_vars, 
+                                            has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gaussian")
+    
+    sink(summary_filepath)
+    print(psych::describe(lv2_Exp_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+    sink()
+    
+    # Just some memory saving...
+    remove(list=c("S1_POS_PosEvnt_Exp"))
+    gc()
+    #----------------------------------------------------------------------------------------------------------------------
+    # Next Set of inputs - lv1 only - no level 2 predictors of any kind
+    data_loader(POSTERIOR_DIR, "S1_POS_PosEvnt")
+    summary_filepath <- "{SUMMARY_DIR}/var_decomp_S1_POS_PosEvnt.txt" %>% glue()
+    within_vars <- c("c.PosEvnt")
+    between_vars <- NULL
+    random_vars <- c("c.PosEvnt")
+    
+    posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt, obs_lvl_var="gaussian")
+    
+    lv1_only_decomp <- posterior_r2mlm_draws(mean_imputed_df, posterior_df, between_vars, within_vars, random_vars, 
+                                             has_intercept=TRUE, clustermeancentered=TRUE, obs_lvl_var="gaussian")
+    sink(summary_filepath)
+    print(psych::describe(lv1_only_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
+    sink()
+    
+    # Just some memory saving...
+    remove(list=c("S1_POS_PosEvnt"))
+    gc()
+    
+    #----------------------------------------------------------------------------------------------------------------------
+    model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
+    
+    model_variance_list <- list()
+    model_variance_list[[1]] <- full_model_decomp
+    model_variance_list[[2]] <- lv1_only_decomp
+    model_variance_list[[3]] <- lv2_DN_decomp
+    model_variance_list[[4]] <- lv2_Exp_decomp
+    model_variance_list[[5]] <- lv2_Exp_DN_decomp
+    
+    save.image(LOAD_PATH)
+} else {
+    load(LOAD_PATH)
+}
 
-# Just some memory saving...
-remove(list=c("S1_POS_PosEvnt_Rct"))
-gc()
-
-#----------------------------------------------------------------------------------------------------------------------
-# Next Set of inputs - lv2 no interaction
-data_loader(POSTERIOR_PATH, "S1_POS_PosEvnt_DN_Exp")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_POS_PosEvnt_DN_Exp.txt"
-within_vars <- c("c.PosEvnt")
-between_vars <- c("c.DN", "m.PosEvnt")
-random_vars <- c("c.PosEvnt")
-
-posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_DN_Exp, resp="POS")
-
-lv2_Exp_DN_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                           has_intercept=TRUE, clustermeancentered=TRUE)
-sink(summary_filepath)
-print(psych::describe(lv2_Exp_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
-sink()
-
-# Just some memory saving...
-remove(list=c("S1_POS_PosEvnt_DN_Exp"))
-gc()
-
-#----------------------------------------------------------------------------------------------------------------------
-# Next Set of inputs - only DN at level 2 of the equation
-data_loader(POSTERIOR_PATH, "S1_POS_PosEvnt_DN")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_POS_PosEvnt_DN.txt"
-within_vars <- c("c.PosEvnt")
-between_vars <- c("c.DN")
-random_vars <- c("c.PosEvnt")
-
-posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_DN, resp="POS")
-
-lv2_DN_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                       has_intercept=TRUE, clustermeancentered=TRUE)
-sink(summary_filepath)
-print(psych::describe(lv2_DN_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
-sink()
-
-# Just some memory saving...
-remove(list=c("S1_POS_PosEvnt_DN"))
-gc()
-
-#----------------------------------------------------------------------------------------------------------------------
-# Next Set of inputs - lv2 no interaction
-data_loader(POSTERIOR_PATH, "S1_POS_PosEvnt_Exp")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_POS_PosEvnt_Exp.txt"
-within_vars <- c("c.PosEvnt")
-between_vars <- c("m.PosEvnt")
-random_vars <- c("c.PosEvnt")
-
-posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt_Exp, resp="POS")
-
-lv2_Exp_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                        has_intercept=TRUE, clustermeancentered=TRUE)
-sink(summary_filepath)
-print(psych::describe(lv2_Exp_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
-sink()
-
-# Just some memory saving...
-remove(list=c("S1_POS_PosEvnt_Exp"))
-gc()
-#----------------------------------------------------------------------------------------------------------------------
-# Next Set of inputs - lv1 only - no level 2 predictors of any kind
-data_loader(POSTERIOR_PATH, "S1_POS_PosEvnt")
-summary_filepath <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Study_1_model_summaries/var_decomp_S1_POS_PosEvnt.txt"
-within_vars <- c("c.PosEvnt")
-between_vars <- NULL
-random_vars <- c("c.PosEvnt")
-
-posterior_df <- posterior_samples_extractor(S1_POS_ucm, S1_POS_PosEvnt, resp="POS")
-
-lv1_only_decomp <- posterior_r2mlm_draws(dat.study1_model, posterior_df, between_vars, within_vars, random_vars, 
-                                           has_intercept=TRUE, clustermeancentered=TRUE)
-sink(summary_filepath)
-print(psych::describe(lv1_only_decomp, skew = FALSE, quant=c(.025, .975)), digits=4)
-sink()
-
-# Just some memory saving...
-remove(list=c("S1_POS_PosEvnt"))
-gc()
-#----------------------------------------------------------------------------------------------------------------------
 # Within Formulas: 
-event <- "mean(lv1_only[['tot_fix_wthn']])"
-reactivity <- "mean(lv2_Exp_DN[['tot_slp_varn']]) + mean(lv2_Exp_DN[['tot_sig_varn']]) - mean(full_model[['tot_slp_varn']]) - mean(full_model[['tot_sig_varn']])"
+event <- "mean(full_model[['tot_fix_wthn']])"
+reactivity <- "(mean(lv2_Exp_DN[['wthn_sig_varn']]) - mean(full_model[['wthn_sig_varn']])) * mean(full_model[['tot_sig_varn']])"
 unmodeled <- "mean(full_model[['tot_slp_varn']]) + mean(full_model[['tot_sig_varn']]) + mean(full_model[['tot_fix_wthn']]) - sum(within_decomp[1:2])"
 
 # Between Formulas: 
 tonic_DN <- "mean(lv2_Exp[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_varn']])"
 exposure <- "mean(lv2_DN[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_varn']])"
 shared_DN_exp <- "mean(lv1_only[['tot_int_varn']]) - mean(lv2_Exp_DN[['tot_int_varn']]) - sum(between_decomp[1:2])"
+
 # Alright what I don't love about this is that it has to be labeled between_decomp under the hood 
 # Fairly brittle approach here but going to live with it for now. 
 # Could re-visit if I turn this into a more complete plotting package
@@ -134,21 +175,16 @@ custom_contrasts <- c("Tonic \n DN" = tonic_DN,
                       "DN \n Shared w/ \n Exp." = shared_DN_exp, 
                       "Reactivity \n" = reactivity)
 
-model_names <- c("full_model", "lv1_only", "lv2_DN", "lv2_Exp", "lv2_Exp_DN")
-
-model_variance_list <- list()
-model_variance_list[[1]] <- full_model_decomp
-model_variance_list[[2]] <- lv1_only_decomp
-model_variance_list[[3]] <- lv2_DN_decomp
-model_variance_list[[4]] <- lv2_Exp_decomp
-model_variance_list[[5]] <- lv2_Exp_DN_decomp
+color_palette <- c("base"='#ddeeed', 
+                   "Tonic \n DN"="#426ebd", 
+                   "DN \n Shared w/ \n Exp."="#00878e", 
+                   "Reactivity \n"="#ad580b")
 
 riverplot_df_helper(model_variance_list, model_names, within_contrasts, between_contrasts, custom_contrasts, 
-                    within_color = RColorBrewer::brewer.pal(9, "Reds")[5], 
-                    between_color = RColorBrewer::brewer.pal(9, "Blues")[5], 
-                    merge_color = RColorBrewer::brewer.pal(9, "Purples")[5], 
-                    custom_contrast_name = "Combined \n DN Effect", main_filename = "~/S1_POS_PosEvnt_decomp.eps", 
+                    color_palette = color_palette, 
+                    custom_contrast_name = "Combined \n DN Effect", 
+                    main_filename = "{GRAPHICS_DIR}/S1_POS_PosEvnt_decomp.eps" %>% glue(), 
                     main_title = "Total Variance Decomposition: Positive Mood, DN, and Positive Events", 
-                    custom_filename = "~/S1_POS_PosEvnt_DN_combined.eps", 
+                    custom_filename = "{GRAPHICS_DIR}/S1_POS_PosEvnt_DN_combined.eps" %>% glue(), 
                     custom_title = "DN Variance Decomposition: Positive Mood, DN, and Positive Events", 
-                    combined_plot_filename = "~/S1_POS_PosEvnt_full_decomp.eps")
+                    combined_plot_filename = "{GRAPHICS_DIR}/S1_POS_PosEvnt_full_decomp.eps" %>% glue())

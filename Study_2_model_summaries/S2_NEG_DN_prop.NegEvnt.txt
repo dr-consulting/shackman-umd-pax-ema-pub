@@ -1,25 +1,25 @@
- Family: lognormal 
-  Links: mu = identity; sigma = identity 
+ Family: gamma 
+  Links: mu = log; shape = identity 
 Formula: NEG ~ 1 + c.DN + prop.NegEvnt + (1 | ID) 
    Data: dat.study2_list (Number of observations: 13440) 
-Samples: 30 chains, each with iter = 25000; warmup = 20000; thin = 1;
+Samples: 30 chains, each with iter = 15000; warmup = 10000; thin = 1;
          total post-warmup samples = 150000
 
 Group-Level Effects: 
 ~ID (Number of levels: 240) 
               Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sd(Intercept)  0.19433   0.00924  0.17728  0.21330 1.00427    13120    23243
+sd(Intercept)  0.20064   0.00960  0.18281  0.22041 1.00760    12611    22743
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-Intercept     0.18382   0.01903  0.14658  0.22103 1.01503     2146    13626
-c.DN          0.07255   0.01292  0.04737  0.09804 1.00734     7034    15991
-prop.NegEvnt  0.62019   0.13244  0.35979  0.87967 1.01578     1804    17214
+Intercept     0.21062   0.01992  0.17168  0.24987 1.01637     1930    13119
+c.DN          0.07608   0.01336  0.04972  0.10207 1.00768     6510    15090
+prop.NegEvnt  0.66143   0.13776  0.39188  0.93286 1.02060     1273    15603
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sigma  0.24805   0.00212  0.24343  0.25175 1.33566       69      130
+shape 16.13614   0.23660 15.69549 16.62356 1.20059       99      221
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).

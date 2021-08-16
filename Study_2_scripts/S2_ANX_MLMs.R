@@ -1,29 +1,30 @@
 ####################################################################################################
-# Study 2 Modeling Script: Anxious Mood Models
+# Study 2 Modeling Script: Negative Mood Models
 
 # Description: 
 #   The analyses below involve a series of increasingly complex Bayesian multilevel regression 
 #   models. The analyses addressed three broad research questions designed to provide a better 
 #   understanding of the association between dispositional negativity and momentary 
-#   anxious affect:
+#   negative affect:
 #     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
-#     negativity and momentary anxious affect? 
+#     negativity and momentary negative affect? 
 #     2. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary anxious affect that can be attributed to differences in overall emotional context? 
+#     momentary negative affect that can be attributed to differences in overall emotional context? 
 #     3. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary anxious affect that can be attributed to reactivity to recent emotionally salient 
+#     momentary negative affect that can be attributed to reactivity to recent emotionally salient 
 #     events?
 
 # Modeling Notes: 
-#   * Exploratory analyses revealed that anxious mood ratings were positively skewed in their
-#   distribution, thus a weakly informative lognormal prior was chosen for these anxious mood scores
+#   * Exploratory analyses revealed that negative mood ratings were approximately symmetrical in 
+#   their distribution, thus a weakly informative normal prior was chosen for negative mood scores
 #   * Missingness was addressed via multiple imputation (see imputation script elsewhere)
 #   * To generate a more informative posterior predictive distribution in the missingness models, 
 #   we included summary scores of the EMA
-#   * ANX is mainly an aggregate of anxious mood - and resembles the main negative mood outcome
-#   from Study 1
+#   * ANX is mainly an aggregate of negative mood and combines high energy (anxious) and low 
+#   energy (depressed) affective states. A multilevel factor analysis supported the combination of 
+#   these two dimensions of negative momentary mood in a single composite. 
 #   * Event ratings were individually mean-centered to maintain separation of between- and within-
-#   subjects sources of variation in anxious mood
+#   subjects sources of variation in negative mood
 ####################################################################################################
 
 #---------------------------------------------------------------------------------------------------
@@ -32,111 +33,74 @@ library(rstan)
 library(rstanarm)
 library(bayesplot)
 library(tidyverse)
+library(glue)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 #---------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
 # Location of repo stored locally
-wd<-paste0('~/dr-consulting_GH/shackman-umd-pax-ema-pub')
-data.folder<-paste0(wd, '/Data')
-study2.model<-paste0(wd, '/Study2_model_summaries')
+wd<-'~/github/ATNL/shackman-umd-pax-ema-pub'
+data.folder <- '{wd}/Data' %>% glue()
+study2.model <- '{wd}/Study_2_model_summaries' %>% glue()
 
 # Will save very large posterior files from analyses (not recommended for git repo)
 # For anyone attempting to reproduce these analyses be sure to identify a storage location with sufficient memory
-posterior_save_dir <- "/media/matthew/My Book"
-study2.out<-paste0(posterior_save_dir, '/EMA_S2_Bayesian_Posteriors')
+posterior_save_dir <- "/media/dr-owner/HDD1"
+study2.out <- '{posterior_save_dir}/EMA_S2_Bayesian_Posteriors/gamma' %>% glue()
 
 # Also generally not recommended to store image files on GH... 
-study2.graphics<-paste0(posterior_save_dir, '/EMA_S2_Graphics')
+study2.graphics <- '{study2.out}/diagnostic_plots' %>% glue()
 #--------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
 # Loading data from study 2 - PAX
 load(paste0(data.folder, '/study2_data.RData'))
-
-dat.study2_list_stacked <- data.frame() 
-for(m in 1:M) # Assumes M is still defined in the imputed data set loaded from .RData above
-  dat.study2_list_stacked <- rbind(dat.study2_list_stacked, dat.study2_list[[i]])
+source('{wd}/utils.R' %>%  glue())
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Creating utility functions to gather priors based on imputed data sets
-get_imputed_mean <- function(data, variable, logged=TRUE){
-  M <- length(data) # data needs to be a list object
-  tmp_vec <- c()
-  for(m in 1:M){
-    var <- unlist(data[[m]][variable])
-    if(logged){
-      var <- log(var)
-    }
-    tmp_vec <- c(tmp_vec, mean(var))
-  }
-  return(mean(tmp_vec))
-}
-
-get_imputed_sd <- function(data, variable, logged=TRUE){
-  M <- length(data) # data needs to be a list object
-  tmp_vec <- c()
-  for(m in 1:M){
-    var <- unlist(data[[m]][variable])
-    if(logged){
-      var <- log(var)
-    }
-    tmp_vec <- c(tmp_vec, sd(var))
-  }
-  return(mean(tmp_vec))
-}
+prior_config <- c(
+  set_prior(
+    'lognormal(2, .5)', 
+    class = 'shape'
+  ), 
+  set_prior(
+    'lognormal(-1.5, .5)', 
+    class = 'sd'
+  ), 
+  set_prior(
+    'lognormal(-.75, .55)', 
+    class = "Intercept"
+  )
+)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Null Model - Intercept Only
 S2_ANX_ucm_form <- bf(
   ANX ~ 1 + (1|ID)
-)+lognormal()
-
-# Creating priors for intercept to help constrain final model in response space
-mu <- get_imputed_mean(dat.study2_list, "ANX")
-sigma <- get_imputed_sd(dat.study2_list, "ANX")
-
-Int_prior <- set_prior(paste0("normal(", mu, ",", sigma, ")"), 
-                       class = "Intercept")
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_ucm <- brm_multiple(S2_ANX_ucm_form,
                            data = dat.study2_list,
                            chains = 3,
-                           prior = c(Int_prior),
-                           iter = 25000,
-                           warmup = 20000,
-                           control = list(adapt_delta = .99,
-                                          max_treedepth = 15))
+                           cores = 3,
+                           iter = 15000,
+                           warmup = 10000, 
+                           control = list(adapt_delta = .99, 
+                                          max_treedepth = 15), 
+                           seed = 19610412, 
+                           save_all_pars = TRUE, 
+                           save_model = "S2_ANX_ucm", 
+                           open_progress = FALSE,
+                           refresh = 0, 
+                           prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_ucm, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_ucm.txt'))
 print(summary(S2_ANX_ucm), digits = 5)
 sink()
-
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_ucm, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_ucm Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_ucm, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_ucm Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_ucm_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
 
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_ucm', 'S2_ANX_ucm_form'), 
@@ -146,53 +110,44 @@ gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Simple model with weakly informative prior - DN as sole predictor 
-beta_prior <- set_prior('normal(0, 2)', class='b')
+
+# Add slopes to the priors
+prior_config <- c(
+  prior_config, 
+  set_prior(
+    'normal(0, 2)', 
+    class = 'b'
+  )
+)
 
 S2_ANX_DN_form <- bf(
   ANX ~ 1 + c.DN + (1|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 S2_ANX_DN <- brm_multiple(S2_ANX_DN_form,
                           data = dat.study2_list,
                           chains = 3,
-                          prior = c(Int_prior, 
-                                    beta_prior),
-                          iter = 25000,
-                          warmup = 20000,
-                          control = list(adapt_delta = .99,
-                                         max_treedepth = 15))
+                          cores = 3,
+                          iter = 15000,
+                          warmup = 10000, 
+                          control = list(adapt_delta = .99, 
+                                         max_treedepth = 15), 
+                          seed = 19610412, 
+                          save_all_pars = TRUE, 
+                          save_model = "S2_ANX_DN", 
+                          open_progress = FALSE,
+                          refresh = 0, 
+                          prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_DN, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_DN.txt'))
 print(summary(S2_ANX_DN), digits = 5)
 sink()
 
-#Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_DN, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_DN Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_DN, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_DN Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_DN_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_DN', 'S2_ANX_DN_form'), 
-     paste0(study2.out, "/S2_ANX_DN.RData"))
+     file = paste0(study2.out, "/S2_ANX_DN.RData"))
 remove(S2_ANX_DN)
 gc()
 
@@ -201,49 +156,32 @@ gc()
 # negative events reported during the EMA period
 S2_ANX_prop.NegEvnt_form <- bf(
   ANX ~ 1 + prop.NegEvnt + (1|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 S2_ANX_prop.NegEvnt <- brm_multiple(S2_ANX_prop.NegEvnt_form,
                                     data = dat.study2_list,
                                     chains = 3,
-                                    prior = c(Int_prior, 
-                                              beta_prior),
-                                    iter = 25000,
-                                    warmup = 20000,
-                                    control = list(adapt_delta = .99,
-                                                   max_treedepth = 15))
+                                    cores = 3,
+                                    iter = 15000,
+                                    warmup = 10000, 
+                                    control = list(adapt_delta = .99, 
+                                                   max_treedepth = 15), 
+                                    seed = 19610412, 
+                                    save_all_pars = TRUE, 
+                                    save_model = "S2_ANX_prop.NegEvnt", 
+                                    open_progress = FALSE,
+                                    refresh = 0, 
+                                    prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_prop.NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_prop.NegEvnt.txt'))
 print(summary(S2_ANX_prop.NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_prop.NegEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_prop.NegEvnt', 'S2_ANX_prop.NegEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_prop.NegEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_prop.NegEvnt.RData"))
 remove(S2_ANX_prop.NegEvnt)
 gc()
 
@@ -252,49 +190,31 @@ gc()
 # positive events reported during the EMA period
 S2_ANX_prop.PosEvnt_form <- bf(
   ANX ~ 1 + prop.PosEvnt + (1|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 S2_ANX_prop.PosEvnt <- brm_multiple(S2_ANX_prop.PosEvnt_form,
                                     data = dat.study2_list,
                                     chains = 3,
-                                    prior = c(Int_prior, 
-                                              beta_prior),
-                                    iter = 25000,
-                                    warmup = 20000,
-                                    control = list(adapt_delta = .99,
-                                                   max_treedepth = 15))
+                                    cores = 3,
+                                    iter = 15000,
+                                    warmup = 10000, 
+                                    control = list(adapt_delta = .99, 
+                                                   max_treedepth = 15), 
+                                    seed = 19610412, 
+                                    save_all_pars = TRUE, 
+                                    save_model = "S2_ANX_prop.PosEvnt", 
+                                    open_progress = FALSE,
+                                    refresh = 0, 
+                                    prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_prop.PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_prop.PosEvnt.txt'))
 print(summary(S2_ANX_prop.PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_prop.PosEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_prop.PosEvnt', 'S2_ANX_prop.PosEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_prop.PosEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_prop.PosEvnt.RData"))
 remove(S2_ANX_prop.PosEvnt)
 gc()
 
@@ -305,49 +225,32 @@ gc()
 # negative events reported)
 S2_ANX_DN_prop.NegEvnt_form <- bf(
   ANX ~ 1 + c.DN + prop.NegEvnt + (1|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 S2_ANX_DN_prop.NegEvnt <- brm_multiple(S2_ANX_DN_prop.NegEvnt_form,
                                        data = dat.study2_list,
                                        chains = 3,
-                                       prior = c(Int_prior, 
-                                                 beta_prior),
-                                       iter = 25000,
-                                       warmup = 20000,
-                                       control = list(adapt_delta = .99,
-                                                      max_treedepth = 15))
+                                       cores = 3,
+                                       iter = 15000,
+                                       warmup = 10000, 
+                                       control = list(adapt_delta = .99, 
+                                                      max_treedepth = 15), 
+                                       seed = 19610412, 
+                                       save_all_pars = TRUE, 
+                                       save_model = "S2_ANX_DN_prop.NegEvnt", 
+                                       open_progress = FALSE,
+                                       refresh = 0, 
+                                       prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_DN_prop.NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_DN_prop.NegEvnt.txt'))
 print(summary(S2_ANX_DN_prop.NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_DN_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_DN_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_DN_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_DN_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_DN_prop.NegEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_DN_prop.NegEvnt', 'S2_ANX_DN_prop.NegEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_DN_prop.NegEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_DN_prop.NegEvnt.RData"))
 remove(S2_ANX_DN_prop.NegEvnt)
 gc()
 
@@ -358,49 +261,32 @@ gc()
 # positive events reported)
 S2_ANX_DN_prop.PosEvnt_form <- bf(
   ANX ~ 1 + c.DN + prop.PosEvnt + (1|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 S2_ANX_DN_prop.PosEvnt <- brm_multiple(S2_ANX_DN_prop.PosEvnt_form,
                                        data = dat.study2_list,
                                        chains = 3,
-                                       prior = c(Int_prior, 
-                                                 beta_prior),
-                                       iter = 25000,
-                                       warmup = 20000,
-                                       control = list(adapt_delta = .99,
-                                                      max_treedepth = 15))
+                                       cores = 3,
+                                       iter = 15000,
+                                       warmup = 10000, 
+                                       control = list(adapt_delta = .99, 
+                                                      max_treedepth = 15), 
+                                       seed = 19610412, 
+                                       save_all_pars = TRUE, 
+                                       save_model = "S2_ANX_DN_prop.PosEvnt", 
+                                       open_progress = FALSE,
+                                       refresh = 0, 
+                                       prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_DN_prop.PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_DN_prop.PosEvnt.txt'))
 print(summary(S2_ANX_DN_prop.PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_DN_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_DN_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_DN_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_DN_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_DN_prop.PosEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_DN_prop.PosEvnt', 'S2_ANX_DN_prop.PosEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_DN_prop.PosEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_DN_prop.PosEvnt.RData"))
 remove(S2_ANX_DN_prop.PosEvnt)
 gc()
 
@@ -409,53 +295,33 @@ gc()
 # Includes a weakly informative distributional prior for random effects correlations
 S2_ANX_NegEvnt_form <- bf(
   ANX ~ 1 + c.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
-
-cor_prior <- set_prior('lkj(2)', class='cor')
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_NegEvnt <- brm_multiple(S2_ANX_NegEvnt_form,
                                data = dat.study2_list, 
                                chains = 3,
-                               prior = c(Int_prior, 
-                                         beta_prior, 
-                                         cor_prior),
-                               iter = 25000,
-                               warmup = 20000,
+                               cores = 3,
+                               iter = 15000,
+                               warmup = 10000, 
                                control = list(adapt_delta = .99, 
-                                              max_treedepth = 15))
+                                              max_treedepth = 15), 
+                               seed = 19610412, 
+                               save_all_pars = TRUE, 
+                               save_model = "S2_ANX_NegEvnt", 
+                               open_progress = FALSE,
+                               refresh = 0, 
+                               prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_NegEvnt.txt'))
 print(summary(S2_ANX_NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_NegEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_NegEvnt', 'S2_ANX_NegEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_NegEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_NegEvnt.RData"))
 remove(S2_ANX_NegEvnt)
 gc()
 
@@ -464,51 +330,33 @@ gc()
 # Includes a weakly informative distributional prior for random effects correlations
 S2_ANX_PosEvnt_form <- bf(
   ANX ~ 1 + c.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_PosEvnt <- brm_multiple(S2_ANX_PosEvnt_form,
                                data = dat.study2_list, 
                                chains = 3,
-                               prior = c(Int_prior, 
-                                         beta_prior, 
-                                         cor_prior),
-                               iter = 25000,
-                               warmup = 20000,
+                               cores = 3,
+                               iter = 15000,
+                               warmup = 10000, 
                                control = list(adapt_delta = .99, 
-                                              max_treedepth = 15))
+                                              max_treedepth = 15), 
+                               seed = 19610412, 
+                               save_all_pars = TRUE, 
+                               save_model = "S2_ANX_PosEvnt", 
+                               open_progress = FALSE,
+                               refresh = 0, 
+                               prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_PosEvnt.txt'))
 print(summary(S2_ANX_PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_PosEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_PosEvnt', 'S2_ANX_PosEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_PosEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_PosEvnt.RData"))
 remove(S2_ANX_PosEvnt)
 gc()
 
@@ -517,51 +365,33 @@ gc()
 # parse source of variation 
 S2_ANX_NegEvnt_DN_form <- bf(
   ANX ~ 1 + c.NegEvnt + c.DN + (1 + c.NegEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_NegEvnt_DN <- brm_multiple(S2_ANX_NegEvnt_DN_form,
-                                  data = dat.study2_list, 
-                                  chains = 3,
-                                  prior = c(Int_prior, 
-                                            beta_prior, 
-                                            cor_prior),
-                                  iter = 25000,
-                                  warmup = 20000,
-                                  control = list(adapt_delta = .99, 
-                                                 max_treedepth = 15))
+                                 data = dat.study2_list, 
+                                 chains = 3,
+                                 cores = 3,
+                                 iter = 15000,
+                                 warmup = 10000, 
+                                 control = list(adapt_delta = .99, 
+                                                max_treedepth = 15), 
+                                 seed = 19610412, 
+                                 save_all_pars = TRUE, 
+                                 save_model = "S2_ANX_NegEvnt_DN", 
+                                 open_progress = FALSE,
+                                 refresh = 0, 
+                                 prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_NegEvnt_DN, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_NegEvnt_DN.txt'))
 print(summary(S2_ANX_NegEvnt_DN), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_NegEvnt_DN, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_NegEvnt_DN Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_NegEvnt_DN, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_NegEvnt_DN Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_NegEvnt_DN_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_NegEvnt_DN', 'S2_ANX_NegEvnt_DN_form'), 
-     paste0(study2.out, "/S2_ANX_NegEvnt_DN.RData"))
+     file = paste0(study2.out, "/S2_ANX_NegEvnt_DN.RData"))
 remove(S2_ANX_NegEvnt_DN)
 gc()
 
@@ -569,51 +399,33 @@ gc()
 # A repeat of the model above, but with positive events 
 S2_ANX_PosEvnt_DN_form <- bf(
   ANX ~ 1 + c.PosEvnt + c.DN + (1 + c.PosEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_PosEvnt_DN <- brm_multiple(S2_ANX_PosEvnt_DN_form,
-                                  data = dat.study2_list, 
-                                  chains = 3,
-                                  prior = c(Int_prior, 
-                                            beta_prior, 
-                                            cor_prior),
-                                  iter = 25000,
-                                  warmup = 20000,
-                                  control = list(adapt_delta = .99, 
-                                                 max_treedepth = 15))
+                                 data = dat.study2_list, 
+                                 chains = 3,
+                                 cores = 3,
+                                 iter = 15000,
+                                 warmup = 10000, 
+                                 control = list(adapt_delta = .99, 
+                                                max_treedepth = 15), 
+                                 seed = 19610412, 
+                                 save_all_pars = TRUE, 
+                                 save_model = "S2_ANX_PosEvnt_DN", 
+                                 open_progress = FALSE,
+                                 refresh = 0, 
+                                 prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_PosEvnt_DN, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_PosEvnt_DN.txt'))
 print(summary(S2_ANX_PosEvnt_DN), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_PosEvnt_DN, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_PosEvnt_DN Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_PosEvnt_DN, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_PosEvnt_DN Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_PosEvnt_DN_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_PosEvnt_DN', 'S2_ANX_PosEvnt_DN_form'), 
-     paste0(study2.out, "/S2_ANX_PosEvnt_DN.RData"))
+     file = paste0(study2.out, "/S2_ANX_PosEvnt_DN.RData"))
 remove(S2_ANX_PosEvnt_DN)
 gc()
 
@@ -622,51 +434,33 @@ gc()
 # and shared variance accounted for by proportion of negative events and DN in momentary mood.
 S2_ANX_NegEvnt_prop.NegEvnt_form <- bf(
   ANX ~ 1 + c.NegEvnt + prop.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_NegEvnt_prop.NegEvnt <- brm_multiple(S2_ANX_NegEvnt_prop.NegEvnt_form,
-                                            data = dat.study2_list, 
-                                            chains = 3,
-                                            prior = c(Int_prior, 
-                                                      beta_prior, 
-                                                      cor_prior),
-                                            iter = 25000,
-                                            warmup = 20000,
-                                            control = list(adapt_delta = .99, 
-                                                           max_treedepth = 15))
+                                  data = dat.study2_list, 
+                                  chains = 3,
+                                  cores = 3,
+                                  iter = 15000,
+                                  warmup = 10000, 
+                                  control = list(adapt_delta = .99, 
+                                                 max_treedepth = 15), 
+                                  seed = 19610412, 
+                                  save_all_pars = TRUE, 
+                                  save_model = "S2_ANX_NegEvnt_prop.NegEvnt", 
+                                  open_progress = FALSE,
+                                  refresh = 0, 
+                                  prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_NegEvnt_prop.NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_NegEvnt_prop.NegEvnt.txt'))
 print(summary(S2_ANX_NegEvnt_prop.NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_NegEvnt_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_NegEvnt_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_NegEvnt_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_NegEvnt_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_NegEvnt_prop.NegEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_NegEvnt_prop.NegEvnt', 'S2_ANX_NegEvnt_prop.NegEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_NegEvnt_prop.NegEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_NegEvnt_prop.NegEvnt.RData"))
 remove(S2_ANX_NegEvnt_prop.NegEvnt)
 gc()
 
@@ -675,51 +469,33 @@ gc()
 # and shared variance accounted for by proportion of positive events and DN in momentary mood.
 S2_ANX_PosEvnt_prop.PosEvnt_form <- bf(
   ANX ~ 1 + c.PosEvnt + prop.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_PosEvnt_prop.PosEvnt <- brm_multiple(S2_ANX_PosEvnt_prop.PosEvnt_form,
-                                            data = dat.study2_list, 
-                                            chains = 3,
-                                            prior = c(Int_prior, 
-                                                      beta_prior, 
-                                                      cor_prior),
-                                            iter = 25000,
-                                            warmup = 20000,
-                                            control = list(adapt_delta = .99, 
-                                                           max_treedepth = 15))
+                                  data = dat.study2_list, 
+                                  chains = 3,
+                                  cores = 3,
+                                  iter = 15000,
+                                  warmup = 10000, 
+                                  control = list(adapt_delta = .99, 
+                                                 max_treedepth = 15), 
+                                  seed = 19610412, 
+                                  save_all_pars = TRUE, 
+                                  save_model = "S2_ANX_PosEvnt_prop.PosEvnt", 
+                                  open_progress = FALSE,
+                                  refresh = 0, 
+                                  prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_PosEvnt_prop.PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_PosEvnt_prop.PosEvnt.txt'))
 print(summary(S2_ANX_PosEvnt_prop.PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_PosEvnt_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_PosEvnt_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_PosEvnt_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_PosEvnt_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_PosEvnt_prop.PosEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_PosEvnt_prop.PosEvnt', 'S2_ANX_PosEvnt_prop.PosEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_PosEvnt_prop.PosEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_PosEvnt_prop.PosEvnt.RData"))
 remove(S2_ANX_PosEvnt_prop.PosEvnt)
 gc()
 
@@ -728,51 +504,33 @@ gc()
 # for by each of the level 2 variables. 
 S2_ANX_NegEvnt_DN_prop.NegEvnt_form <- bf(
   ANX ~ 1 + c.NegEvnt + c.DN + prop.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_NegEvnt_DN_prop.NegEvnt <- brm_multiple(S2_ANX_NegEvnt_DN_prop.NegEvnt_form,
-                                               data = dat.study2_list, 
-                                               chains = 3,
-                                               prior = c(Int_prior, 
-                                                         beta_prior, 
-                                                         cor_prior),
-                                               iter = 25000,
-                                               warmup = 20000,
-                                               control = list(adapt_delta = .99, 
-                                                              max_treedepth = 15))
+                                            data = dat.study2_list, 
+                                            chains = 3,
+                                            cores = 3,
+                                            iter = 15000,
+                                            warmup = 10000, 
+                                            control = list(adapt_delta = .99, 
+                                                           max_treedepth = 15), 
+                                            seed = 19610412, 
+                                            save_all_pars = TRUE, 
+                                            save_model = "S2_ANX_NegEvnt_DN_prop.NegEvnt", 
+                                            open_progress = FALSE,
+                                            refresh = 0, 
+                                            prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_NegEvnt_DN_prop.NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_NegEvnt_DN_prop.NegEvnt.txt'))
 print(summary(S2_ANX_NegEvnt_DN_prop.NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_NegEvnt_DN_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_NegEvnt_DN_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_NegEvnt_DN_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_NegEvnt_DN_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_NegEvnt_DN_prop.NegEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_NegEvnt_DN_prop.NegEvnt', 'S2_ANX_NegEvnt_DN_prop.NegEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_NegEvnt_DN_prop.NegEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_NegEvnt_DN_prop.NegEvnt.RData"))
 remove(S2_ANX_NegEvnt_DN_prop.NegEvnt)
 gc()
 
@@ -781,51 +539,33 @@ gc()
 # for by each of the level 2 variables. 
 S2_ANX_PosEvnt_DN_prop.PosEvnt_form <- bf(
   ANX ~ 1 + c.PosEvnt + c.DN + prop.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_PosEvnt_DN_prop.PosEvnt <- brm_multiple(S2_ANX_PosEvnt_DN_prop.PosEvnt_form,
-                                               data = dat.study2_list, 
-                                               chains = 3,
-                                               prior = c(Int_prior, 
-                                                         beta_prior, 
-                                                         cor_prior),
-                                               iter = 25000,
-                                               warmup = 20000,
-                                               control = list(adapt_delta = .99, 
-                                                              max_treedepth = 15))
+                                            data = dat.study2_list, 
+                                            chains = 3,
+                                            cores = 3,
+                                            iter = 15000,
+                                            warmup = 10000, 
+                                            control = list(adapt_delta = .99, 
+                                                           max_treedepth = 15), 
+                                            seed = 19610412, 
+                                            save_all_pars = TRUE, 
+                                            save_model = "S2_ANX_PosEvnt_DN_prop.PosEvnt", 
+                                            open_progress = FALSE,
+                                            refresh = 0, 
+                                            prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_PosEvnt_DN_prop.PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_PosEvnt_DN_prop.PosEvnt.txt'))
 print(summary(S2_ANX_PosEvnt_DN_prop.PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_PosEvnt_DN_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_PosEvnt_DN_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_PosEvnt_DN_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_PosEvnt_DN_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_PosEvnt_DN_prop.PosEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_PosEvnt_DN_prop.PosEvnt', 'S2_ANX_PosEvnt_DN_prop.PosEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_PosEvnt_DN_prop.PosEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_PosEvnt_DN_prop.PosEvnt.RData"))
 remove(S2_ANX_PosEvnt_DN_prop.PosEvnt)
 gc()
 
@@ -833,51 +573,33 @@ gc()
 # Final model - with reactivity effect included (in theory accounting for level-1 variance)
 S2_ANX_NegEvnt_x_DN_prop.NegEvnt_form <- bf(
   ANX ~ 1 + c.NegEvnt * c.DN + prop.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_NegEvnt_x_DN_prop.NegEvnt <- brm_multiple(S2_ANX_NegEvnt_x_DN_prop.NegEvnt_form,
-                                                 data = dat.study2_list, 
-                                                 chains = 3,
-                                                 prior = c(Int_prior, 
-                                                           beta_prior, 
-                                                           cor_prior),
-                                                 iter = 25000,
-                                                 warmup = 20000,
-                                                 control = list(adapt_delta = .99, 
-                                                                max_treedepth = 15))
+                                            data = dat.study2_list, 
+                                            chains = 3,
+                                            cores = 3,
+                                            iter = 15000,
+                                            warmup = 10000, 
+                                            control = list(adapt_delta = .99, 
+                                                           max_treedepth = 15), 
+                                            seed = 19610412, 
+                                            save_all_pars = TRUE, 
+                                            save_model = "S2_ANX_NegEvnt_x_DN_prop.NegEvnt", 
+                                            open_progress = FALSE,
+                                            refresh = 0, 
+                                            prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_NegEvnt_x_DN_prop.NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_NegEvnt_x_DN_prop.NegEvnt.txt'))
 print(summary(S2_ANX_NegEvnt_x_DN_prop.NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_NegEvnt_x_DN_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_NegEvnt_x_DN_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_NegEvnt_x_DN_prop.NegEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_NegEvnt_x_DN_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_NegEvnt_x_DN_prop.NegEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_NegEvnt_x_DN_prop.NegEvnt', 'S2_ANX_NegEvnt_x_DN_prop.NegEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_NegEvnt_x_DN_prop.NegEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_NegEvnt_x_DN_prop.NegEvnt.RData"))
 remove(S2_ANX_NegEvnt_DN_prop.NegEvnt)
 gc()
 
@@ -885,50 +607,32 @@ gc()
 # Final model - with reactivity effect included (in theory accounting for level-1 variance)
 S2_ANX_PosEvnt_x_DN_prop.PosEvnt_form <- bf(
   ANX ~ 1 + c.PosEvnt * c.DN + prop.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+)+Gamma(link = "log")
 
 # Running model with priors (see above)
 S2_ANX_PosEvnt_x_DN_prop.PosEvnt <- brm_multiple(S2_ANX_PosEvnt_x_DN_prop.PosEvnt_form,
-                                                 data = dat.study2_list, 
-                                                 chains = 3,
-                                                 prior = c(Int_prior, 
-                                                           beta_prior, 
-                                                           cor_prior),
-                                                 iter = 25000,
-                                                 warmup = 20000, 
-                                                 control = list(adapt_delta = .99, 
-                                                                max_treedepth = 15))
+                                               data = dat.study2_list, 
+                                               chains = 3,
+                                               cores = 3,
+                                               iter = 15000,
+                                               warmup = 10000, 
+                                               control = list(adapt_delta = .99, 
+                                                              max_treedepth = 15), 
+                                               seed = 19610412, 
+                                               save_all_pars = TRUE, 
+                                               save_model = "S2_ANX_PosEvnt_x_DN_prop.PosEvnt", 
+                                               open_progress = FALSE,
+                                               refresh = 0, 
+                                               prior = prior_config)
+
+create_diagnostic_plots(S2_ANX_PosEvnt_x_DN_prop.PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
 sink(paste0(study2.model, '/S2_ANX_PosEvnt_x_DN_prop.PosEvnt.txt'))
 print(summary(S2_ANX_PosEvnt_x_DN_prop.PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <- 
-  pp_check(S2_ANX_PosEvnt_x_DN_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_ANX_PosEvnt_x_DN_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <- 
-  pp_check(S2_ANX_PosEvnt_x_DN_prop.PosEvnt, 
-           newdata = dat.study2_list_stacked,
-           nsamples = 12, 
-           type = "error_hist")+
-  ggtitle("S2_ANX_PosEvnt_x_DN_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_ANX_PosEvnt_x_DN_prop.PosEvnt_ppc.png'), 
-    units = "in", 
-    height = 5.5, 
-    width = 11, 
-    res = 900)
-cowplot::plot_grid(ppc_hist, 
-                   ppc_density)
-dev.off()
-
 # Given size of files saved off posteriors to external hard drive
 save(list = c('S2_ANX_PosEvnt_x_DN_prop.PosEvnt', 'S2_ANX_PosEvnt_x_DN_prop.PosEvnt_form'), 
-     paste0(study2.out, "/S2_ANX_PosEvnt_x_DN_prop.PosEvnt.RData"))
+     file = paste0(study2.out, "/S2_ANX_PosEvnt_x_DN_prop.PosEvnt.RData"))
 remove(S2_ANX_PosEvnt_x_DN_prop.PosEvnt)
 gc()

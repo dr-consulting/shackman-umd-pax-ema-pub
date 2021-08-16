@@ -8,12 +8,12 @@ Samples: 30 chains, each with iter = 15000; warmup = 10000; thin = 1;
 Group-Level Effects: 
 ~ID (Number of levels: 127) 
               Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sd(Intercept)  1.71535   0.13235  1.47706  1.99640 1.03497      561     5257
+sd(Intercept)  1.13249   0.08152  0.98383  1.30346 1.02078      991    16055
 
 Population-Level Effects: 
           Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-Intercept  1.26952   0.16025  0.95737  1.58685 1.02294     1035     7548
-c.DN       0.47117   0.15887  0.15987  0.78575 1.01438     3377    13360
+Intercept -0.37140   0.10508 -0.57969 -0.16701 1.01572     1687    22247
+c.DN       0.34403   0.10593  0.13482  0.55150 1.01645     1555    22244
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

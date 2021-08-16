@@ -1,31 +1,31 @@
  Family: gamma 
   Links: mu = log; shape = identity 
 Formula: NEG ~ 1 + c.NegEvnt + prop_NegEvnt + c.DN + (1 + c.NegEvnt | ID) 
-   Data: dat.study1_list[[1]] (Number of observations: 8890) 
-Samples: 3 chains, each with iter = 15000; warmup = 10000; thin = 1;
-         total post-warmup samples = 15000
+   Data: dat.study1_list (Number of observations: 8890) 
+Samples: 30 chains, each with iter = 15000; warmup = 10000; thin = 1;
+         total post-warmup samples = 150000
 
 Group-Level Effects: 
 ~ID (Number of levels: 127) 
                          Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS
-sd(Intercept)             0.25212   0.01649  0.22240  0.28710 1.00031     1812
-sd(c.NegEvnt)             0.13150   0.01520  0.10299  0.16279 1.00023     6983
-cor(Intercept,c.NegEvnt)  0.31053   0.11953  0.06284  0.52894 1.00011     7327
+sd(Intercept)             0.25111   0.01642  0.22131  0.28539 1.00904    12772
+sd(c.NegEvnt)             0.13293   0.01361  0.10766  0.16101 1.04741      359
+cor(Intercept,c.NegEvnt)  0.06409   0.11539 -0.16314  0.28566 1.04524      386
                          Tail_ESS
-sd(Intercept)                3459
-sd(c.NegEvnt)               10035
-cor(Intercept,c.NegEvnt)    10677
+sd(Intercept)               30762
+sd(c.NegEvnt)                2264
+cor(Intercept,c.NegEvnt)     2568
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-Intercept     0.16968   0.06604  0.03937  0.29905 1.00193     1240     2759
-c.NegEvnt     0.19047   0.01674  0.15752  0.22325 1.00024     5816     9371
-prop_NegEvnt  0.48908   0.08838  0.31647  0.66513 1.00185     1202     2495
-c.DN          0.10306   0.02272  0.05837  0.14750 1.00215     1231     2566
+Intercept     0.28011   0.04947  0.18291  0.37712 1.01354     2369    15490
+c.NegEvnt     0.17279   0.01579  0.14214  0.20390 1.06561      265     1287
+prop_NegEvnt  0.53190   0.10260  0.32970  0.73282 1.01708     1765    14794
+c.DN          0.11167   0.02365  0.06483  0.15804 1.01219     3327    17632
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-shape  8.13435   0.12143  7.89806  8.37411 1.00025    27213    10257
+shape  8.36348   0.15502  8.06759  8.66913 1.24387       86      433
 
 Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

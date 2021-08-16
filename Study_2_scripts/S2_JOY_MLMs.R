@@ -1,30 +1,30 @@
 ####################################################################################################
-# Study 2 Modeling Script: Cheerful Mood Models
+# Study 2 Modeling Script: Positive Mood Models
 
 # Description: 
 #   The analyses below involve a series of increasingly complex Bayesian multilevel regression 
 #   models. The analyses addressed three broad research questions designed to provide a better 
 #   understanding of the association between dispositional negativity and momentary 
-#   cheerful affect:
+#   positive affect:
 #     1. What is a reasonable estimate of the tonic or "unique" association between dispositional 
-#     negativity and momentary cheerful affect? 
+#     negativity and momentary positive affect? 
 #     2. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary cheerful affect that can be attributed to differences in overall emotional context? 
+#     momentary positive affect that can be attributed to differences in overall emotional context? 
 #     3. What is a reasonable estimate of the association between dispositional negativity and 
-#     momentary cheerful affect that can be attributed to reactivity to recent emotionally salient 
+#     momentary positive affect that can be attributed to reactivity to recent emotionally salient 
 #     events?
 
 # Modeling Notes: 
-#   * Exploratory analyses revealed that cheerful mood ratings were positively skewed in their
-#   distribution, thus a weakly informative lognormal prior was chosen for these cheerful mood 
-#   scores
+#   * Exploratory analyses revealed that positive mood ratings were approximately symmetrical in 
+#   their distribution, thus a weakly informative normal prior was chosen for positive mood scores
 #   * Missingness was addressed via multiple imputation (see imputation script elsewhere)
 #   * To generate a more informative posterior predictive distribution in the missingness models, 
 #   we included summary scores of the EMA
-#   * JOY is mainly an aggregate of cheerful mood - and resembles the main positive mood outcome
-#   from Study 1
+#   * JOY is mainly an aggregate of positive mood and combines high energy (cheerful) and low 
+#   energy (calm) affective states. A multilevel factor analysis supported the combination of these
+#   two dimensions of positive momentary mood in a single composite. 
 #   * Event ratings were individually mean-centered to maintain separation of between- and within-
-#   subjects sources of variation in cheerful mood
+#   subjects sources of variation in positive mood
 ####################################################################################################
 
 #---------------------------------------------------------------------------------------------------
@@ -33,902 +33,461 @@ library(rstan)
 library(rstanarm)
 library(bayesplot)
 library(tidyverse)
+library(glue)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 #---------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
 # Location of repo stored locally
-wd<-paste0('~/dr-consulting_GH/shackman-umd-pax-ema-pub')
-data.folder<-paste0(wd, '/Data')
-study2.model<-paste0(wd, '/Study2_model_summaries')
+wd<-'~/github/ATNL/shackman-umd-pax-ema-pub'
+data.folder <- '{wd}/Data' %>% glue()
+study2.model <- '{wd}/Study_2_model_summaries' %>% glue()
 
 # Will save very large posterior files from analyses (not recommended for git repo)
 # For anyone attempting to reproduce these analyses be sure to identify a storage location with sufficient memory
-posterior_save_dir <- "/media/matthew/My Book"
-study2.out<-paste0(posterior_save_dir, '/EMA_S2_Bayesian_Posteriors')
+posterior_save_dir <- "/media/dr-owner/HDD1"
+study2.out <- '{posterior_save_dir}/EMA_S2_Bayesian_Posteriors/gaussian' %>% glue()
 
 # Also generally not recommended to store image files on GH... 
-study2.graphics<-paste0(posterior_save_dir, '/EMA_S2_Graphics')
+study2.graphics <- '{study2.out}/diagnostic_plots' %>% glue()
 #--------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
 # Loading data from study 2 - PAX
 load(paste0(data.folder, '/study2_data.RData'))
+source('{wd}/utils.R' %>%  glue())
 
-dat.study2_list_stacked <- data.frame()
-for(m in 1:M)  # Assumes M is still defined in the imputed data environment loaded from .RData
-  dat.study2_list_stacked <- rbind(dat.study2_list_stacked, dat.study2_list[[i]])
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Creating utility functions to gather priors based on imputed data sets
-get_imputed_mean <- function(data, variable, logged=TRUE){
-  M <- length(data)  # data needs to be a list object
-  tmp_vec <- c()
-  for(m in 1:M){
-    var <- unlist(data[[m]][variable])
-    if(logged){
-      var <- log(var)
-    }
-    tmp_vec <- c(tmp_vec, mean(var))
-  }
-  return(mean(tmp_vec))
-}
-
-get_imputed_sd <- function(data, variable, logged=TRUE){
-  M <- length(data)  # data needs to be a list object
-  tmp_vec <- c()
-  for(m in 1:M){
-    var <- unlist(data[[m]][variable])
-    if(logged){
-      var <- log(var)
-    }
-    tmp_vec <- c(tmp_vec, sd(var))
-  }
-  return(mean(tmp_vec))
-}
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Loading data from study 2 - PAX
+load(paste0(data.folder, '/study2_data.RData'))
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Null Model - Intercept Only
+# Initial null intercept model - will be necessary to generate final variance estimates
+prior_config <- c(
+  set_prior(
+    'normal(0, 2)', 
+    class = "Intercept"
+  )
+)
+
 S2_JOY_ucm_form <- bf(
   JOY ~ 1 + (1|ID)
-)+lognormal()
-
-# Creating priors for intercept to help constrain final model in response space
-mu <- get_imputed_mean(dat.study2_list, "JOY")
-sigma <- get_imputed_sd(dat.study2_list, "JOY")
-
-Int_prior <- set_prior(paste0("normal(", mu, ",", sigma, ")"),
-                       class = "Intercept")
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_ucm <- brm_multiple(S2_JOY_ucm_form,
-                           data = dat.study2_list,
-                           chains = 3,
-                           prior = c(Int_prior),
-                           iter = 25000,
-                           warmup = 20000,
-                           control = list(adapt_delta = .99,
-                                          max_treedepth = 15))
+S2_JOY_ucm <- brm_multiple(
+  S2_JOY_ucm_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_ucm", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
+
+save(list = c("S2_JOY_ucm", "S2_JOY_ucm_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_ucm.RData' %>% glue()) 
 
 sink(paste0(study2.model, '/S2_JOY_ucm.txt'))
 print(summary(S2_JOY_ucm), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_ucm,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_ucm Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_ucm, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_ucm,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_ucm Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_ucm_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_ucm', 'S2_JOY_ucm_form'),
-     file = paste0(study2.out, "/S2_JOY_ucm.RData"))
-remove(S2_JOY_ucm)
+remove(list=c("S2_JOY_ucm", "S2_JOY_ucm_form"))
 gc()
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Simple model with weakly informative prior - DN as sole predictor 
-beta_prior <- set_prior('normal(0, 2)', class='b')
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Model with a level-1 random effect for positive event rating (individually mean centered)
+prior_config <- c(
+  prior_config, 
+  set_prior(
+    'normal(0, 3)', 
+    class = 'b'
+  )
+)
 
-S2_JOY_DN_form <- bf(
-  JOY ~ 1 + c.DN + (1|ID)
-)+lognormal()
-
-S2_JOY_DN <- brm_multiple(S2_JOY_DN_form,
-                          data = dat.study2_list,
-                          chains = 3,
-                          prior = c(Int_prior,
-                                    beta_prior),
-                          iter = 25000,
-                          warmup = 20000,
-                          control = list(adapt_delta = .99,
-                                         max_treedepth = 15))
-
-sink(paste0(study2.model, '/S2_JOY_DN.txt'))
-print(summary(S2_JOY_DN), digits = 5)
-sink()
-
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_DN,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_DN Posterior Predictive Distribution")
-
-ppc_hist <-
-  pp_check(S2_JOY_DN,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_DN Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_DN_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_DN', 'S2_JOY_DN_form'),
-     file = paste0(study2.out, "/S2_JOY_DN.RData"))
-remove(S2_JOY_DN)
-gc()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Simple model with a weakly informative prior for individual differences in the proportion of 
-# negative events reported during the EMA period
-S2_JOY_prop.NegEvnt_form <- bf(
-  JOY ~ 1 + prop.NegEvnt + (1|ID)
-)+lognormal()
-
-S2_JOY_prop.NegEvnt <- brm_multiple(S2_JOY_prop.NegEvnt_form,
-                                    data = dat.study2_list,
-                                    chains = 3,
-                                    prior = c(Int_prior,
-                                              beta_prior),
-                                    iter = 25000,
-                                    warmup = 20000,
-                                    control = list(adapt_delta = .99,
-                                                   max_treedepth = 15))
-
-sink(paste0(study2.model, '/S2_JOY_prop.NegEvnt.txt'))
-print(summary(S2_JOY_prop.NegEvnt), digits = 5)
-sink()
-
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <-
-  pp_check(S2_JOY_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_prop.NegEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_prop.NegEvnt', 'S2_JOY_prop.NegEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_prop.NegEvnt.RData"))
-remove(S2_JOY_prop.NegEvnt)
-gc()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Simple model with a weakly informative prior for individual differences in the proportion of 
-# positive events reported during the EMA period
-S2_JOY_prop.PosEvnt_form <- bf(
-  JOY ~ 1 + prop.PosEvnt + (1|ID)
-)+lognormal()
-
-S2_JOY_prop.PosEvnt <- brm_multiple(S2_JOY_prop.PosEvnt_form,
-                                    data = dat.study2_list,
-                                    chains = 3,
-                                    prior = c(Int_prior,
-                                              beta_prior),
-                                    iter = 25000,
-                                    warmup = 20000,
-                                    control = list(adapt_delta = .99,
-                                                   max_treedepth = 15))
-
-sink(paste0(study2.model, '/S2_JOY_prop.PosEvnt.txt'))
-print(summary(S2_JOY_prop.PosEvnt), digits = 5)
-sink()
-
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <-
-  pp_check(S2_JOY_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_prop.PosEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_prop.PosEvnt', 'S2_JOY_prop.PosEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_prop.PosEvnt.RData"))
-remove(S2_JOY_prop.PosEvnt)
-gc()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Model that includes two "level 2" predictors - DN and proportion of EMA reports that included the 
-# occurence of a negative event. Used in disentangling between-subject sources of variability 
-# attributable to DN vs. overall negative emotional context (i.e., variation in the number of 
-# negative events reported)
-S2_JOY_DN_prop.NegEvnt_form <- bf(
-  JOY ~ 1 + c.DN + prop.NegEvnt + (1|ID)
-)+lognormal()
-
-S2_JOY_DN_prop.NegEvnt <- brm_multiple(S2_JOY_DN_prop.NegEvnt_form,
-                                       data = dat.study2_list,
-                                       chains = 3,
-                                       prior = c(Int_prior,
-                                                 beta_prior),
-                                       iter = 25000,
-                                       warmup = 20000,
-                                       control = list(adapt_delta = .99,
-                                                      max_treedepth = 15))
-
-sink(paste0(study2.model, '/S2_JOY_DN_prop.NegEvnt.txt'))
-print(summary(S2_JOY_DN_prop.NegEvnt), digits = 5)
-sink()
-
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_DN_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_DN_prop.NegEvnt Posterior Predictive Distribution")
-
-ppc_hist <-
-  pp_check(S2_JOY_DN_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_DN_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_DN_prop.NegEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_DN_prop.NegEvnt', 'S2_JOY_DN_prop.NegEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_DN_prop.NegEvnt.RData"))
-remove(S2_JOY_DN_prop.NegEvnt)
-gc()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Model that includes two "level 2" predictors - DN and proportion of EMA reports that included the 
-# occurence of positive event. Used in disentangling between-subject sources of variability 
-# attributable to DN vs. overall positive emotional context (i.e., variation in the number of 
-# positive events reported)
-S2_JOY_DN_prop.PosEvnt_form <- bf(
-  JOY ~ 1 + c.DN + prop.PosEvnt + (1|ID)
-)+lognormal()
-
-S2_JOY_DN_prop.PosEvnt <- brm_multiple(S2_JOY_DN_prop.PosEvnt_form,
-                                       data = dat.study2_list,
-                                       chains = 3,
-                                       prior = c(Int_prior,
-                                                 beta_prior),
-                                       iter = 25000,
-                                       warmup = 20000,
-                                       control = list(adapt_delta = .99,
-                                                      max_treedepth = 15))
-
-sink(paste0(study2.model, '/S2_JOY_DN_prop.PosEvnt.txt'))
-print(summary(S2_JOY_DN_prop.PosEvnt), digits = 5)
-sink()
-
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_DN_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_DN_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <-
-  pp_check(S2_JOY_DN_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_DN_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_DN_prop.PosEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_DN_prop.PosEvnt', 'S2_JOY_DN_prop.PosEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_DN_prop.PosEvnt.RData"))
-remove(S2_JOY_DN_prop.PosEvnt)
-gc()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Simple level 1 model with individually centered negative events at "level 1"
-# Includes a weakly informative distributional prior for random effects correlations
 S2_JOY_NegEvnt_form <- bf(
   JOY ~ 1 + c.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
-
-cor_prior <- set_prior('lkj(2)', class='cor')
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_NegEvnt <- brm_multiple(S2_JOY_NegEvnt_form,
-                               data = dat.study2_list,
-                               chains = 3,
-                               prior = c(Int_prior,
-                                         beta_prior,
-                                         cor_prior),
-                               iter = 25000,
-                               warmup = 20000,
-                               control = list(adapt_delta = .99,
-                                              max_treedepth = 15))
+S2_JOY_NegEvnt <- brm_multiple(
+  S2_JOY_NegEvnt_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_NegEvnt", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
+
+save(list = c("S2_JOY_NegEvnt", "S2_JOY_NegEvnt_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_NegEvnt.RData' %>% glue()) 
 
 sink(paste0(study2.model, '/S2_JOY_NegEvnt.txt'))
 print(summary(S2_JOY_NegEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_NegEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_NegEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_NegEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_NegEvnt', 'S2_JOY_NegEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_NegEvnt.RData"))
-remove(S2_JOY_NegEvnt)
+remove(list=c("S2_JOY_NegEvnt", "S2_JOY_NegEvnt_form"))
 gc()
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Simple level 1 model with individually centered positive events at "level 1"
-# Includes a weakly informative distributional prior for random effects correlations
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-
+# Model with a level-1 random effect for positive event rating (individually mean-centered)
 S2_JOY_PosEvnt_form <- bf(
   JOY ~ 1 + c.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_PosEvnt <- brm_multiple(S2_JOY_PosEvnt_form,
-                               data = dat.study2_list,
-                               chains = 3,
-                               prior = c(Int_prior,
-                                         beta_prior,
-                                         cor_prior),
-                               iter = 25000,
-                               warmup = 20000,
-                               control = list(adapt_delta = .99,
-                                              max_treedepth = 15))
+S2_JOY_PosEvnt <- brm_multiple(
+  S2_JOY_PosEvnt_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_PosEvnt", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
+
+save(list = c("S2_JOY_PosEvnt", "S2_JOY_PosEvnt_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_PosEvnt.RData' %>% glue()) 
 
 sink(paste0(study2.model, '/S2_JOY_PosEvnt.txt'))
 print(summary(S2_JOY_PosEvnt), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_PosEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_PosEvnt, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_PosEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_PosEvnt', 'S2_JOY_PosEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_PosEvnt.RData"))
-remove(S2_JOY_PosEvnt)
+remove(list=c("S2_JOY_PosEvnt", "S2_JOY_PosEvnt_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# A model that includes effects on the intercept at both "levels". Used in the calculations to 
-# parse source of variation 
+# Model with level 1 random effect for recent positive event ratings and DN 
+#   Note that due to the individually mean-centered level-1 effect, this model should capture an 
+#   estimate of DN's total between-subjects "effect" on momentary mood. 
 S2_JOY_NegEvnt_DN_form <- bf(
   JOY ~ 1 + c.NegEvnt + c.DN + (1 + c.NegEvnt|ID)
-)+lognormal()
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_NegEvnt_DN <- brm_multiple(S2_JOY_NegEvnt_DN_form,
-                                 data = dat.study2_list,
-                                 chains = 3,
-                                 prior = c(Int_prior,
-                                           beta_prior,
-                                           cor_prior),
-                                 iter = 25000,
-                                 warmup = 20000,
-                                 control = list(adapt_delta = .99,
-                                                max_treedepth = 15))
+S2_JOY_NegEvnt_DN <- brm_multiple(
+  S2_JOY_NegEvnt_DN_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_NegEvnt_DN", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
+
+save(list = c("S2_JOY_NegEvnt_DN", "S2_JOY_NegEvnt_DN_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_NegEvnt_DN.RData' %>% glue()) 
 
 sink(paste0(study2.model, '/S2_JOY_NegEvnt_DN.txt'))
 print(summary(S2_JOY_NegEvnt_DN), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_NegEvnt_DN,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_NegEvnt_DN Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_NegEvnt_DN, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_NegEvnt_DN,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_NegEvnt_DN Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_NegEvnt_DN_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_NegEvnt_DN', 'S2_JOY_NegEvnt_DN_form'),
-     file = paste0(study2.out, "/S2_JOY_NegEvnt_DN.RData"))
-remove(S2_JOY_NegEvnt_DN)
+remove(list=c("S2_JOY_NegEvnt_DN", "S2_JOY_NegEvnt_DN_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# A repeat of the model above, but with positive events 
+# Model with level 1 random effect for recent positive event ratings and DN 
+#   Note that due to the individually mean-centered level-1 effect, this model should capture an 
+#   estimate of DN's total between-subjects "effect" on momentary mood. Relatedly, accounting for 
+#   slight differences related to the Bayesian approach, this effect should be effectively the same
+#   as the one observed in the previous model. 
 S2_JOY_PosEvnt_DN_form <- bf(
   JOY ~ 1 + c.PosEvnt + c.DN + (1 + c.PosEvnt|ID)
-)+lognormal()
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_PosEvnt_DN <- brm_multiple(S2_JOY_PosEvnt_DN_form,
-                                 data = dat.study2_list,
-                                 chains = 3,
-                                 prior = c(Int_prior,
-                                           beta_prior,
-                                           cor_prior),
-                                 iter = 25000,
-                                 warmup = 20000,
-                                 control = list(adapt_delta = .99,
-                                                max_treedepth = 15))
+S2_JOY_PosEvnt_DN <- brm_multiple(
+  S2_JOY_PosEvnt_DN_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_PosEvnt_DN", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
+
+save(list = c("S2_JOY_PosEvnt_DN", "S2_JOY_PosEvnt_DN_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_PosEvnt_DN.RData' %>% glue()) 
 
 sink(paste0(study2.model, '/S2_JOY_PosEvnt_DN.txt'))
 print(summary(S2_JOY_PosEvnt_DN), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_PosEvnt_DN,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_PosEvnt_DN Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_PosEvnt_DN, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_PosEvnt_DN,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_PosEvnt_DN Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_PosEvnt_DN_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_PosEvnt_DN', 'S2_JOY_PosEvnt_DN_form'),
-     file = paste0(study2.out, "/S2_JOY_PosEvnt_DN.RData"))
-remove(S2_JOY_PosEvnt_DN)
+remove(list=c("S2_JOY_PosEvnt_DN", "S2_JOY_PosEvnt_DN_form"))
 gc()
 
+
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Swapping proportion of negative events for DN in this "two-level" model. Used to estimate unique
-# and shared variance accounted for by proportion of negative events and DN in momentary mood.
-S2_JOY_NegEvnt_prop.NegEvnt_form <- bf(
+# This model includes *average* positive event ratings as a measure of an individual's overall 
+# positive event context. This is our proxy for overall exposure to more intense positive events. 
+S2_JOY_NegEvnt_Exp_form <- bf(
   JOY ~ 1 + c.NegEvnt + prop.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_NegEvnt_prop.NegEvnt <- brm_multiple(S2_JOY_NegEvnt_prop.NegEvnt_form,
-                                  data = dat.study2_list,
-                                  chains = 3,
-                                  prior = c(Int_prior,
-                                            beta_prior,
-                                            cor_prior),
-                                  iter = 25000,
-                                  warmup = 20000,
-                                  control = list(adapt_delta = .99,
-                                                 max_treedepth = 15))
+S2_JOY_NegEvnt_Exp <- brm_multiple(
+  S2_JOY_NegEvnt_Exp_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_NegEvnt_Exp", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
 
-sink(paste0(study2.model, '/S2_JOY_NegEvnt_prop.NegEvnt.txt'))
-print(summary(S2_JOY_NegEvnt_prop.NegEvnt), digits = 5)
+save(list = c("S2_JOY_NegEvnt_Exp", "S2_JOY_NegEvnt_Exp_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_NegEvnt_Exp.RData' %>% glue()) 
+
+sink(paste0(study2.model, '/S2_JOY_NegEvnt_Exp.txt'))
+print(summary(S2_JOY_NegEvnt_Exp), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_NegEvnt_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_NegEvnt_prop.NegEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_NegEvnt_Exp, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_NegEvnt_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_NegEvnt_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_NegEvnt_prop.NegEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_NegEvnt_prop.NegEvnt', 'S2_JOY_NegEvnt_prop.NegEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_NegEvnt_prop.NegEvnt.RData"))
-remove(S2_JOY_NegEvnt_prop.NegEvnt)
+remove(list=c("S2_JOY_NegEvnt_Exp", "S2_JOY_NegEvnt_Exp_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Swapping proportion of positive events for DN in this "two-level" model. Used to estimate unique
-# and shared variance accounted for by proportion of positive events and DN in momentary mood.
-S2_JOY_PosEvnt_prop.PosEvnt_form <- bf(
+# Model is the same as the one above, with the exception that the focus is on inclusion of between-
+# subjects differences in average positive mood rating. The idea is similar though in that this is 
+# our proxy for the overall contextual effect of reporting more intense positive events on average.
+S2_JOY_PosEvnt_Exp_form <- bf(
   JOY ~ 1 + c.PosEvnt + prop.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_PosEvnt_prop.PosEvnt <- brm_multiple(S2_JOY_PosEvnt_prop.PosEvnt_form,
-                                  data = dat.study2_list,
-                                  chains = 3,
-                                  prior = c(Int_prior,
-                                            beta_prior,
-                                            cor_prior),
-                                  iter = 25000,
-                                  warmup = 20000,
-                                  control = list(adapt_delta = .99,
-                                                 max_treedepth = 15))
+S2_JOY_PosEvnt_Exp <- brm_multiple(
+  S2_JOY_PosEvnt_Exp_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_PosEvnt_Exp", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
 
-sink(paste0(study2.model, '/S2_JOY_PosEvnt_prop.PosEvnt.txt'))
-print(summary(S2_JOY_PosEvnt_prop.PosEvnt), digits = 5)
+save(list = c("S2_JOY_PosEvnt_Exp", "S2_JOY_PosEvnt_Exp_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_PosEvnt_Exp.RData' %>% glue()) 
+
+sink(paste0(study2.model, '/S2_JOY_PosEvnt_Exp.txt'))
+print(summary(S2_JOY_PosEvnt_Exp), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_PosEvnt_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_PosEvnt_prop.PosEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_PosEvnt_Exp, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_PosEvnt_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_PosEvnt_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_PosEvnt_prop.PosEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_PosEvnt_prop.PosEvnt', 'S2_JOY_PosEvnt_prop.PosEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_PosEvnt_prop.PosEvnt.RData"))
-remove(S2_JOY_PosEvnt_prop.PosEvnt)
+remove(list=c("S2_JOY_PosEvnt_Exp", "S2_JOY_PosEvnt_Exp_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Model with both DN and prorportion of negative events - used to parse out % of variance accounted 
-# for by each of the level 2 variables. 
-S2_JOY_NegEvnt_DN_prop.NegEvnt_form <- bf(
-  JOY ~ 1 + c.NegEvnt + c.DN + prop.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
+# This model in conjunction with the models including just DN or just average positive event ratings
+# will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
+# positive contexts
+S2_JOY_NegEvnt_DN_Exp_form <- bf(
+  JOY ~ 1 + c.NegEvnt + prop.NegEvnt + c.DN + (1 + c.NegEvnt|ID)
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_NegEvnt_DN_prop.NegEvnt <- brm_multiple(S2_JOY_NegEvnt_DN_prop.NegEvnt_form,
-                                            data = dat.study2_list,
-                                            chains = 3,
-                                            prior = c(Int_prior,
-                                                      beta_prior,
-                                                      cor_prior),
-                                            iter = 25000,
-                                            warmup = 20000,
-                                            control = list(adapt_delta = .99,
-                                                           max_treedepth = 15))
+S2_JOY_NegEvnt_DN_Exp <- brm_multiple(
+  S2_JOY_NegEvnt_DN_Exp_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_NegEvnt_DN_Exp", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
 
-sink(paste0(study2.model, '/S2_JOY_NegEvnt_DN_prop.NegEvnt.txt'))
-print(summary(S2_JOY_NegEvnt_DN_prop.NegEvnt), digits = 5)
+save(list = c("S2_JOY_NegEvnt_DN_Exp", "S2_JOY_NegEvnt_DN_Exp_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_NegEvnt_DN_Exp.RData' %>% glue()) 
+
+sink(paste0(study2.model, '/S2_JOY_NegEvnt_DN_Exp.txt'))
+print(summary(S2_JOY_NegEvnt_DN_Exp), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_NegEvnt_DN_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_NegEvnt_DN_prop.NegEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_NegEvnt_DN_Exp, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_NegEvnt_DN_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_NegEvnt_DN_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_NegEvnt_DN_prop.NegEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-save(list = c('S2_JOY_NegEvnt_DN_prop.NegEvnt', 'S2_JOY_NegEvnt_DN_prop.NegEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_NegEvnt_DN_prop.NegEvnt.RData"))
-remove(S2_JOY_NegEvnt_DN_prop.NegEvnt)
+remove(list=c("S2_JOY_NegEvnt_DN_Exp", "S2_JOY_NegEvnt_DN_Exp_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Model with both DN and prorportion of positive events - used to parse out % of variance accounted 
-# for by each of the level 2 variables. 
-S2_JOY_PosEvnt_DN_prop.PosEvnt_form <- bf(
-  JOY ~ 1 + c.PosEvnt + c.DN + prop.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
-
-#Running model with priors (see above)
-S2_JOY_PosEvnt_DN_prop.PosEvnt <- brm_multiple(S2_JOY_PosEvnt_DN_prop.PosEvnt_form,
-                                            data = dat.study2_list,
-                                            chains = 3,
-                                            prior = c(Int_prior,
-                                                      beta_prior,
-                                                      cor_prior),
-                                            iter = 25000,
-                                            warmup = 20000,
-                                            control = list(adapt_delta = .99,
-                                                           max_treedepth = 15))
-
-sink(paste0(study2.model, '/S2_JOY_PosEvnt_DN_prop.PosEvnt.txt'))
-print(summary(S2_JOY_PosEvnt_DN_prop.PosEvnt), digits = 5)
-sink()
-
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_PosEvnt_DN_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_PosEvnt_DN_prop.PosEvnt Posterior Predictive Distribution")
-
-ppc_hist <-
-  pp_check(S2_JOY_PosEvnt_DN_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_PosEvnt_DN_prop.PosEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_PosEvnt_DN_prop.PosEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_PosEvnt_DN_prop.PosEvnt', 'S2_JOY_PosEvnt_DN_prop.PosEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_PosEvnt_DN_prop.PosEvnt.RData"))
-remove(S2_JOY_PosEvnt_DN_prop.PosEvnt)
-gc()
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Final model - with reactivity effect included (in theory accounting for level-1 variance)
-S2_JOY_NegEvnt_x_DN_prop.NegEvnt_form <- bf(
-  JOY ~ 1 + c.NegEvnt * c.DN + prop.NegEvnt + (1 + c.NegEvnt|ID)
-)+lognormal()
+# This model in conjunction with the models including just DN or just average positive event ratings
+# will be used to isolate the amount of "unique" variance attributable to DN, and to overall 
+# positive contexts
+S2_JOY_PosEvnt_DN_Exp_form <- bf(
+  JOY ~ 1 + c.PosEvnt + prop.PosEvnt + c.DN + (1 + c.PosEvnt|ID)
+) + gaussian()
 
 # Running model with priors (see above)
-S2_JOY_NegEvnt_x_DN_prop.NegEvnt <- brm_multiple(S2_JOY_NegEvnt_x_DN_prop.NegEvnt_form,
-                                            data = dat.study2_list,
-                                            chains = 3,
-                                            prior = c(Int_prior,
-                                                      beta_prior,
-                                                      cor_prior),
-                                            iter = 25000,
-                                            warmup = 20000,
-                                            control = list(adapt_delta = .99,
-                                                           max_treedepth = 15))
+S2_JOY_PosEvnt_DN_Exp <- brm_multiple(
+  S2_JOY_PosEvnt_DN_Exp_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_PosEvnt_DN_Exp", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
 
-sink(paste0(study2.model, '/S2_JOY_NegEvnt_x_DN_prop.NegEvnt.txt'))
-print(summary(S2_JOY_NegEvnt_x_DN_prop.NegEvnt), digits = 5)
+save(list = c("S2_JOY_PosEvnt_DN_Exp", "S2_JOY_PosEvnt_DN_Exp_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_PosEvnt_DN_Exp.RData' %>% glue()) 
+
+sink(paste0(study2.model, '/S2_JOY_PosEvnt_DN_Exp.txt'))
+print(summary(S2_JOY_PosEvnt_DN_Exp), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_NegEvnt_x_DN_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_NegEvnt_x_DN_prop.NegEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_PosEvnt_DN_Exp, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_NegEvnt_x_DN_prop.NegEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_NegEvnt_x_DN_prop.NegEvnt Model Posterior Residuals")
-
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_NegEvnt_x_DN_prop.NegEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
-
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_NegEvnt_x_DN_prop.NegEvnt', 'S2_JOY_NegEvnt_x_DN_prop.NegEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_NegEvnt_x_DN_prop.NegEvnt.RData"))
-remove(S2_JOY_NegEvnt_DN_prop.NegEvnt)
+remove(list=c("S2_JOY_PosEvnt_DN_Exp", "S2_JOY_PosEvnt_DN_Exp_form"))
 gc()
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Final model - with reactivity effect included (in theory accounting for level-1 variance)
-S2_JOY_PosEvnt_x_DN_prop.PosEvnt_form <- bf(
-  JOY ~ 1 + c.PosEvnt * c.DN + prop.PosEvnt + (1 + c.PosEvnt|ID)
-)+lognormal()
+# This model actually represents the "final" model for this modeling tree (DN, positive events, 
+# positive mood). All variance components obtained in the present set of analyses stem from 
+# isolated R2 differences moving from the unconditional model to this model. 
+S2_JOY_NegEvnt_Rct_form <- bf(
+  JOY ~ 1 + c.NegEvnt * c.DN + prop.NegEvnt + c.DN + (1 + c.NegEvnt|ID)
+) + gaussian()
 
-#Running model with priors (see above)
-S2_JOY_PosEvnt_x_DN_prop.PosEvnt <- brm_multiple(S2_JOY_PosEvnt_x_DN_prop.PosEvnt_form,
-                                               data = dat.study2_list,
-                                               chains = 3,
-                                               prior = c(Int_prior,
-                                                         beta_prior,
-                                                         cor_prior),
-                                               iter = 25000,
-                                               warmup = 20000,
-                                               control = list(adapt_delta = .99,
-                                                              max_treedepth = 15))
+# Running model with priors (see above)
+S2_JOY_NegEvnt_Rct <- brm_multiple(
+  S2_JOY_NegEvnt_Rct_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_NegEvnt_Rct", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
 
-sink(paste0(study2.model, '/S2_JOY_PosEvnt_x_DN_prop.PosEvnt.txt'))
-print(summary(S2_JOY_PosEvnt_x_DN_prop.PosEvnt), digits = 5)
+save(list = c("S2_JOY_NegEvnt_Rct", "S2_JOY_NegEvnt_Rct_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_NegEvnt_Rct.RData' %>% glue()) 
+
+sink(paste0(study2.model, '/S2_JOY_NegEvnt_Rct.txt'))
+print(summary(S2_JOY_NegEvnt_Rct), digits = 5)
 sink()
 
-# Simple model check plotting:
-ppc_density <-
-  pp_check(S2_JOY_PosEvnt_x_DN_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 100)+
-  ggtitle("S2_JOY_PosEvnt_x_DN_prop.PosEvnt Posterior Predictive Distribution")
+create_diagnostic_plots(S2_JOY_NegEvnt_Rct, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
 
-ppc_hist <-
-  pp_check(S2_JOY_PosEvnt_x_DN_prop.PosEvnt,
-           newdata = dat.study2_list_stacked,
-           nsamples = 12,
-           type = "error_hist")+
-  ggtitle("S2_JOY_PosEvnt_x_DN_prop.PosEvnt Model Posterior Residuals")
+remove(list=c("S2_JOY_NegEvnt_Rct", "S2_JOY_NegEvnt_Rct_form"))
+gc()
 
-# Saving plots:
-png(paste0(study2.graphics, '/S2_JOY_PosEvnt_x_DN_prop.PosEvnt_ppc.png'),
-    units = "in",
-    height = 5.5,
-    width = 11,
-    res = 900)
-cowplot::plot_grid(ppc_hist,
-                   ppc_density)
-dev.off()
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# This model actually represents the "final" model for this modeling tree (DN, positive events, 
+# positive mood). All variance components obtained in the present set of analyses stem from 
+# isolated R2 differences moving from the unconditional model to this model. 
+S2_JOY_PosEvnt_Rct_form <- bf(
+  JOY ~ 1 + c.PosEvnt * c.DN + prop.PosEvnt + c.DN + (1 + c.PosEvnt|ID)
+) + gaussian()
 
-# Given size of files saved off posteriors to external hard drive
-save(list = c('S2_JOY_PosEvnt_x_DN_prop.PosEvnt', 'S2_JOY_PosEvnt_x_DN_prop.PosEvnt_form'),
-     file = paste0(study2.out, "/S2_JOY_PosEvnt_x_DN_prop.PosEvnt.RData"))
-remove(S2_JOY_PosEvnt_x_DN_prop.PosEvnt)
+# Running model with priors (see above)
+S2_JOY_PosEvnt_Rct <- brm_multiple(
+  S2_JOY_PosEvnt_Rct_form,
+  data = dat.study2_list, 
+  chains = 3,
+  cores = 3,
+  iter = 15000,
+  warmup = 10000, 
+  control = list(adapt_delta = .99, 
+                 max_treedepth = 15), 
+  seed = 7201969, 
+  save_all_pars = TRUE, 
+  save_model = "S2_JOY_PosEvnt_Rct", 
+  open_progress = FALSE,
+  refresh = 0, 
+  prior = prior_config
+)
+
+save(list = c("S2_JOY_PosEvnt_Rct", "S2_JOY_PosEvnt_Rct_form", "dat.study2_list", "dat.study2_model"), 
+     file = '{study2.out}/S2_JOY_PosEvnt_Rct.RData' %>% glue()) 
+
+sink(paste0(study2.model, '/S2_JOY_PosEvnt_Rct.txt'))
+print(summary(S2_JOY_PosEvnt_Rct), digits = 5)
+sink()
+
+create_diagnostic_plots(S2_JOY_PosEvnt_Rct, dat.study2_list, n_samples = 100, dir_path = study2.graphics)
+
+remove(list=c("S2_JOY_PosEvnt_Rct", "S2_JOY_PosEvnt_Rct_form"))
 gc()

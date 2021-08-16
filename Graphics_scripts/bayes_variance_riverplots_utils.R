@@ -269,6 +269,9 @@ posterior_samples_extractor <- function(null_model, focal_model, obs_lvl_var=NUL
     if(obs_lvl_var == "gamma"){
       posterior_df[lv1_resid_name] <- gamma_link_func(posterior_df[obs_lvl_var_name])
     }
+    else if(obs_lvl_var == "gaussian"){
+      posterior_df[lv1_resid_name] <- posterior_df[obs_lvl_var_name]
+    }
     else{
       stop("Currently only gamma-distributed observation level variance allowed")
     }
@@ -448,7 +451,7 @@ range01<-function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))
 
 
 riverplot_df_helper <- function(model_variance_list, model_names, within_constrasts, between_constrasts, 
-                                custom_contrasts=NULL, within_color, between_color, merge_color, 
+                                custom_contrasts=NULL, color_palette=NULL,
                                 custom_contrast_name=NULL, main_filename, main_title, custom_filename=NULL, 
                                 custom_title=NULL, combined_plot_filename=NULL){
 
@@ -516,17 +519,20 @@ riverplot_df_helper <- function(model_variance_list, model_names, within_constra
                       y = c(effects_y_pos, cut_points), 
                       stringsAsFactors = FALSE)
   
-  col_pal <- c(rep(within_color, length(within_constrasts)), 
-               rep(between_color, length(between_constrasts)),
-               within_color, between_color, merge_color)
   
   styles <- lapply(nodes$y, 
                    function(x){
-                     list(col = col_pal[x], lty=0, textcol = "black")
+                     list(col=color_palette[['base']], lty=0, textcol = "black")
                    })
   
-  for(i in 1:length(col_pal)){
-    styles[[i]]$col <- col_pal[i]
+  color_palette <- c("base"='#ddeeed', 
+                     "Tonic \n DN"="#426ebd", 
+                     "DN \n Shared w/ \n Exp."="#00878e", 
+                     "Reactivity \n"="#ad580b")
+  
+  for(i in 2:length(color_palette)){
+    bool_vec <- str_detect(nodes[['ID']], names(color_palette)[i])
+    styles[[which(bool_vec)]]$col <- color_palette[[i]]
   }
   
   names(styles) <- nodes$ID
@@ -562,16 +568,14 @@ riverplot_df_helper <- function(model_variance_list, model_names, within_constra
                         y = c(cust_effects_y_pos, end_point), 
                         stringsAsFactors = FALSE)
     
-    col_pal <- ifelse(grepl("Total \n Within.*", cust_river_DF$N2), within_color, between_color)
-    col_pal <- c(col_pal, merge_color)
-    
     styles <- lapply(nodes$y, 
                      function(x){
-                       list(col = col_pal[x], lty=0, textcol = "black")
+                       list(lty=0, textcol = "black")
                      })
     
-    for(i in 1:length(col_pal)){
-      styles[[i]]$col <- col_pal[i]
+    for(i in 2:length(color_palette)){
+      bool_vec <- str_detect(nodes[['ID']], names(color_palette)[i])
+      styles[[which(bool_vec)]]$col <- color_palette[[i]]
     }
     
     names(styles) <- nodes$ID

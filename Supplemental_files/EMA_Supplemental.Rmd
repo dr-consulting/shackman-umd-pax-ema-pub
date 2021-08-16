@@ -21,16 +21,11 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
-user<-ifelse(Sys.getenv("USERPROFILE")=="", "~", Sys.getenv("USERPROFILE"))
-wd<-paste0(user, '/Dropbox/UMD/Shackman Lab/EMA_MS')
-data.folder<-paste0(wd, '/Data')
-study2.out<-paste0(wd, '/Study 2 output')
-study2.graphics<-paste0(study2.out, '/Graphics')
-study2.model<-paste0(study2.out, '/Model summaries')
-stan.code<-paste0(wd, '/Stan_code')
-EDA.folder<-paste0(study2.out, '/EDA')
+DATA_DIR <- '../Data'
+SUPPLEMENTAL_DATA <- paste0(DATA_DIR, '/supplemental.RData')
 
-load(paste0(data.folder, "/Supplemental.RData"))
+load(SUPPLEMENTAL_DATA)
+
 library(knitr)
 library(tidyverse)
 library(nFactors)
@@ -43,22 +38,6 @@ library(semTools)
 # Description
 
 This document contains supplemental information and graphics designed to enhance the transparent reporting of our results in an empirical study titled: "Personality and the momentary challenges of everyday life: Decomposing the role of dispositional negativity". In accordance with an open science framework we have made the "raw" `.Rmd` file that generated this document, the `R` scripts for analyses in the main manuscript, and the data available in the following GitHub repository: https://github.com/dr-consulting/shackman-umd-pax-ema-pub. 
-
-\pagebreak
-
-# Table S1 - Study 2 Rotated Loadings from Split-Half Factor Analysis
-```{r S2_SuppT1, results = 'asis', message = FALSE}
-fit1<-psych::principal(dat.EFA[,3:17], nfactors=4, rotate = 'oblimin')
-load1<-unclass(fit1$loadings)
-
-load1<-round(load1, digits = 2)
-load1[abs(load1)<.30]<-""
-
-colnames(load1)[1:4]<-c('Positive', 'Negative', 'Angry', 'Tired')
-
-kable(load1)
-```
-*Note*. $N = 114, N_{obs} = 5577$
 
 \pagebreak
 
@@ -161,8 +140,171 @@ Panel A of **Supplemental Figure S3** diplays the histogram and density overlay 
 
 \pagebreak
 
-# Figure S4 - Study 2 EMA Mood Scores Distributions (*a priori* composites)
-```{r S2_SuppF4}
+# Figure S4 - Study 1 Bivariate Associations: DN and EMA Aggregates
+```{r S1_SuppF4, message=FALSE, fig.height=7, fig.width=7}
+# function for standardizing label positioning in plots
+label_pos <- function(min_val, max_val, rel_location){
+  range <- max_val - min_val
+  delta <- range*rel_location
+  return(min_val + delta)
+}
+
+# custom function for aggregating regression outputs to use in generation of plots
+regression <- function(df, x, y){
+  # setting the regression function. 
+  form<-as.formula(
+    paste(y, "~", x)
+  )
+  reg_fun<-lm(data = df, 
+              formula = form)  #regression function
+  # getting the slope, intercept, R square and adjusted R squared of 
+  # the regression function (with 3 decimals).
+  slope<-round(coef(reg_fun)[2],3)  
+  intercept<-round(coef(reg_fun)[1],3) 
+  R2<-round(as.numeric(summary(reg_fun)[8]),3)
+  r<-round(sqrt(R2)*slope/abs(slope), digits = 3)
+  R2.Adj<-round(as.numeric(summary(reg_fun)[9]),3)
+  p_val<-round(as.numeric(summary(reg_fun)$coefficients[2,4]), digits = 3)
+  tmp.DF<-data.frame(slope, 
+                     intercept, 
+                     R2, 
+                     r, 
+                     R2.Adj, 
+                     p_val)
+  return(tmp.DF)
+}
+
+# For association between DN and negative event ratings
+DN_NegEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "NegEvnt_mean")
+
+g1 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = NegEvnt_mean))+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
+  labs(y = "Relative Frequency of Negative Events", 
+       x = "Standardized DN Scores", 
+       title = "Frequency of negative events\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_NegEvnt_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(0, 1, .1), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(0, 1)) +
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+
+# For association between DN and anxious mood ratings
+DN_NegMood_rtg_reg <- regression(supp_descrip_study1, "DN", "NEG_mean")
+
+g2 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = NEG_mean))+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
+  labs(y = "Mean Negative Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Negative Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_NegMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) +
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and positve event ratings
+DN_PosEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "PosEvnt_mean")
+
+g3 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = PosEvnt_mean))+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
+  labs(y = "Relative Frequency of Positive Events", 
+       x = "Standardized DN Scores", 
+       title = "Frequency of positive events\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_PosEvnt_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(0, 1, .1), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(0, 1)) + 
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# For association between DN and cheerful mood ratings
+DN_PosMood_rtg_reg <- regression(supp_descrip_study1, "DN", "POS_mean")
+
+g4 <- ggplot(data = supp_descrip_study1, 
+           aes(x = DN, 
+               y = POS_mean))+
+  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
+  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
+  labs(y = "Mean Positive Mood Rating", 
+       x = "Standardized DN Scores", 
+       title = "Mean Positive Mood Ratings\nas a Function of DN") +
+  theme_bw()+
+  geom_label(data = DN_PosMood_rtg_reg, 
+             inherit.aes = FALSE, 
+             aes(x = label_pos(-2.4, 2.4, .85), 
+                 y = label_pos(.75, 5.25, .9), 
+                 label = paste("R^2 ==", as.character(R2))), 
+             parse = TRUE)+
+  scale_y_continuous(limits = c(.75, 5.25)) + 
+  scale_x_continuous(limits = c(-2.4, 2.5)) +
+  theme(plot.title = element_text(hjust = .5, size = 12), 
+        axis.title = element_text(size = 10))
+
+# Combining plots and adding marginal historgrams for added information
+cowplot::plot_grid(ggExtra::ggMarginal(g1, 
+                                       type = "histogram",
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
+                   ggExtra::ggMarginal(g3, 
+                                       type = "histogram",
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
+                   ggExtra::ggMarginal(g2, 
+                                       type = "histogram",
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
+                   ggExtra::ggMarginal(g4, 
+                                       type = "histogram",
+                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]),
+                   ncol = 2, 
+                   labels = c("A", "B", "C", "D"))
+```
+*Note*. DN = Dispositional Negativity. The top histogram is effectively repeated across each plot. The top row displays the association between dispositional negativity scores and participants' mean negative event ratings in plot **A** and the association between dispositional negativity and participants' mean negative momentary mood ratings in panel **B**. The same associations are presented in panels **C** and **D** but for the corresponding positively valenced measures. 
+
+\pagebreak
+
+# Table S1 - Study 2 Rotated Loadings from Split-Half Factor Analysis
+```{r S2_SuppT1, results = 'asis', message = FALSE}
+fit1<-psych::principal(dat.EFA[,3:17], nfactors=4, rotate = 'oblimin')
+load1<-unclass(fit1$loadings)
+
+load1<-round(load1, digits = 2)
+load1[abs(load1)<.30]<-""
+
+colnames(load1)[1:4]<-c('Positive', 'Negative', 'Angry', 'Tired')
+
+kable(load1)
+```
+*Note*. $N = 114, N_{obs} = 5577$
+
+\pagebreak
+
+# Figure S5 - Study 2 EMA Mood Scores Distributions (*a priori* composites)
+```{r S2_SuppF5}
 # Negative Composite
 h <- 2 * IQR(na.omit(supp_Mood_comps_study2$NEG)) / length(na.omit(supp_Mood_comps_study2$NEG))^(1/3)
 dens<-data.frame(x = density(na.omit(supp_Mood_comps_study2$NEG))$x, 
@@ -315,153 +457,6 @@ cowplot::plot_grid(g_Neg, g_Pos, g_Tired, g_Anx, g_Joy, g_Angry, g_Dep, g_Calm, 
 The first column of the plot (i.e., Panels A, D, and G) contains the negative mood composite derived from the split half factor analysis results, and two *a priori* facets designed to tap anxious and depressed momentary mood. The second column (i.e., Panels B, E, and H) displays similar composites and facets in our momentary measures of positive affect. The third and final column (i.e., Panels C and F) display the distributions of momentary tired and angry mood ratings. 
 
 \pagebreak 
-
-# Figure S5 - Study 1 Bivariate Associations: DN and EMA Aggregates
-```{r S1_SuppF5, message=FALSE, fig.height=7, fig.width=7}
-# function for standardizing label positioning in plots
-label_pos <- function(min_val, max_val, rel_location){
-  range <- max_val - min_val
-  delta <- range*rel_location
-  return(min_val + delta)
-}
-
-# custom function for aggregating regression outputs to use in generation of plots
-regression <- function(df, x, y){
-  # setting the regression function. 
-  form<-as.formula(
-    paste(y, "~", x)
-  )
-  reg_fun<-lm(data = df, 
-              formula = form)  #regression function
-  # getting the slope, intercept, R square and adjusted R squared of 
-  # the regression function (with 3 decimals).
-  slope<-round(coef(reg_fun)[2],3)  
-  intercept<-round(coef(reg_fun)[1],3) 
-  R2<-round(as.numeric(summary(reg_fun)[8]),3)
-  r<-round(sqrt(R2)*slope/abs(slope), digits = 3)
-  R2.Adj<-round(as.numeric(summary(reg_fun)[9]),3)
-  p_val<-round(as.numeric(summary(reg_fun)$coefficients[2,4]), digits = 3)
-  tmp.DF<-data.frame(slope, 
-                     intercept, 
-                     R2, 
-                     r, 
-                     R2.Adj, 
-                     p_val)
-  return(tmp.DF)
-}
-
-# For association between DN and negative event ratings
-DN_NegEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "NegEvnt_mean")
-
-g1 <- ggplot(data = supp_descrip_study1, 
-           aes(x = DN, 
-               y = NegEvnt_mean))+
-  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
-  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
-  labs(y = "Mean Negative Event Rating", 
-       x = "Standardized DN Scores", 
-       title = "Mean Negative Event Ratings\nas a Function of DN") +
-  theme_bw()+
-  geom_label(data = DN_NegEvnt_rtg_reg, 
-             inherit.aes = FALSE, 
-             aes(x = label_pos(-2.4, 2.4, .85), 
-                 y = label_pos(.75, 5.25, .9), 
-                 label = paste("R^2 ==", as.character(R2))), 
-             parse = TRUE)+
-  scale_y_continuous(limits = c(.75, 5.25)) +
-  scale_x_continuous(limits = c(-2.4, 2.5)) +
-  theme(plot.title = element_text(hjust = .5, size = 12), 
-        axis.title = element_text(size = 10))
-
-
-# For association between DN and anxious mood ratings
-DN_NegMood_rtg_reg <- regression(supp_descrip_study1, "DN", "NEG_mean")
-
-g2 <- ggplot(data = supp_descrip_study1, 
-           aes(x = DN, 
-               y = NEG_mean))+
-  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
-  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
-  labs(y = "Mean Negative Mood Rating", 
-       x = "Standardized DN Scores", 
-       title = "Mean Negative Mood Ratings\nas a Function of DN") +
-  theme_bw()+
-  geom_label(data = DN_NegMood_rtg_reg, 
-             inherit.aes = FALSE, 
-             aes(x = label_pos(-2.4, 2.4, .85), 
-                 y = label_pos(.75, 5.25, .9), 
-                 label = paste("R^2 ==", as.character(R2))), 
-             parse = TRUE)+
-  scale_y_continuous(limits = c(.75, 5.25)) +
-  scale_x_continuous(limits = c(-2.4, 2.5)) +
-  theme(plot.title = element_text(hjust = .5, size = 12), 
-        axis.title = element_text(size = 10))
-
-# For association between DN and positve event ratings
-DN_PosEvnt_rtg_reg <- regression(supp_descrip_study1, "DN", "PosEvnt_mean")
-
-g3 <- ggplot(data = supp_descrip_study1, 
-           aes(x = DN, 
-               y = PosEvnt_mean))+
-  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
-  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
-  labs(y = "Mean Positive Event Rating", 
-       x = "Standardized DN Scores", 
-       title = "Mean Positive Event Ratings\nas a Function of DN") +
-  theme_bw()+
-  geom_label(data = DN_PosEvnt_rtg_reg, 
-             inherit.aes = FALSE, 
-             aes(x = label_pos(-2.4, 2.4, .85), 
-                 y = label_pos(.75, 5.25, .9), 
-                 label = paste("R^2 ==", as.character(R2))), 
-             parse = TRUE)+
-  scale_y_continuous(limits = c(.75, 5.25)) + 
-  scale_x_continuous(limits = c(-2.4, 2.5)) +
-  theme(plot.title = element_text(hjust = .5, size = 12), 
-        axis.title = element_text(size = 10))
-
-# For association between DN and cheerful mood ratings
-DN_PosMood_rtg_reg <- regression(supp_descrip_study1, "DN", "POS_mean")
-
-g4 <- ggplot(data = supp_descrip_study1, 
-           aes(x = DN, 
-               y = POS_mean))+
-  geom_point(alpha = .75, color = RColorBrewer::brewer.pal(9, "Blues")[5])+
-  stat_smooth(method = "lm", se = FALSE, color = RColorBrewer::brewer.pal(9, "Reds")[5])+
-  labs(y = "Mean Positive Mood Rating", 
-       x = "Standardized DN Scores", 
-       title = "Mean Positive Mood Ratings\nas a Function of DN") +
-  theme_bw()+
-  geom_label(data = DN_PosMood_rtg_reg, 
-             inherit.aes = FALSE, 
-             aes(x = label_pos(-2.4, 2.4, .85), 
-                 y = label_pos(.75, 5.25, .9), 
-                 label = paste("R^2 ==", as.character(R2))), 
-             parse = TRUE)+
-  scale_y_continuous(limits = c(.75, 5.25)) + 
-  scale_x_continuous(limits = c(-2.4, 2.5)) +
-  theme(plot.title = element_text(hjust = .5, size = 12), 
-        axis.title = element_text(size = 10))
-
-# Combining plots and adding marginal historgrams for added information
-cowplot::plot_grid(ggExtra::ggMarginal(g1, 
-                                       type = "histogram",
-                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
-                   ggExtra::ggMarginal(g2, 
-                                       type = "histogram",
-                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
-                   ggExtra::ggMarginal(g3, 
-                                       type = "histogram",
-                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]), 
-                   ggExtra::ggMarginal(g4, 
-                                       type = "histogram",
-                                       fill = RColorBrewer::brewer.pal(9, "Blues")[5]),
-                   ncol = 2, 
-                   labels = c("A", "B", "C", "D"))
-```
-*Note*. DN = Dispositional Negativity. The top histogram is effectiely repeated across each plot. The top row displays the association between dispositional negativity scores and participants' mean negative event ratings in plot **A** and the association between dispositional negativity and participants' mean negative momentary mood ratings in panel **B**. The same associations are presented in panels **C** and **D** but for the corresponding positively valenced measures. 
-
-\pagebreak
 
 # Figure S6 - Study 2 PCA Scree Plot
 ```{r S2_SuppF6}
@@ -814,7 +809,7 @@ Note that this is not an exhaustive test of the factor structure of these moment
 
 ```{r SuppAn4, message=FALSE}
 fit.CFA11<-sem(model = CFA.mod11, 
-             data=dat.CFA, 
+             data=rbind(dat.EFA, dat.CFA), 
              cluster = 'ID', 
              estimator = 'MLR')
 

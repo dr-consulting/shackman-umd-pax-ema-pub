@@ -1,32 +1,32 @@
- Family: lognormal 
-  Links: mu = identity; sigma = identity 
+ Family: gamma 
+  Links: mu = log; shape = identity 
 Formula: ANX ~ 1 + c.PosEvnt + c.DN + prop.PosEvnt + (1 + c.PosEvnt | ID) 
    Data: dat.study2_list (Number of observations: 13440) 
-Samples: 30 chains, each with iter = 25000; warmup = 20000; thin = 1;
+Samples: 30 chains, each with iter = 15000; warmup = 10000; thin = 1;
          total post-warmup samples = 150000
 
 Group-Level Effects: 
 ~ID (Number of levels: 240) 
                          Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS
-sd(Intercept)             0.22857   0.01101  0.20800  0.25127 1.01157     2700
-sd(c.PosEvnt)             0.06333   0.01075  0.04263  0.08482 1.04171      423
-cor(Intercept,c.PosEvnt) -0.68454   0.14566 -0.92614 -0.36354 1.26777       80
+sd(Intercept)             0.23530   0.01131  0.21428  0.25852 1.00641    13840
+sd(c.PosEvnt)             0.07132   0.01027  0.05145  0.09165 1.04891      354
+cor(Intercept,c.PosEvnt) -0.65595   0.11777 -0.88776 -0.42055 1.07573      230
                          Tail_ESS
-sd(Intercept)               31991
-sd(c.PosEvnt)                1192
-cor(Intercept,c.PosEvnt)      165
+sd(Intercept)               29719
+sd(c.PosEvnt)                2325
+cor(Intercept,c.PosEvnt)      758
 
 Population-Level Effects: 
              Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-Intercept     0.27371   0.02436  0.22600  0.32176 1.01794     1371    19935
-c.PosEvnt    -0.08309   0.00942 -0.10122 -0.06447 1.14497      129      493
-c.DN          0.06981   0.01476  0.04065  0.09857 1.03395      602     5507
-prop.PosEvnt  0.03568   0.07327 -0.10789  0.17924 1.02279      960    12150
+Intercept     0.32480   0.02492  0.27607  0.37350 1.01343     2748    17346
+c.PosEvnt    -0.08670   0.00908 -0.10437 -0.06875 1.08385      210      903
+c.DN          0.07267   0.01466  0.04386  0.10147 1.01406     2304    19354
+prop.PosEvnt  0.02163   0.07428 -0.12355  0.16671 1.01462     3534    18319
 
 Family Specific Parameters: 
       Estimate Est.Error l-95% CI u-95% CI    Rhat Bulk_ESS Tail_ESS
-sigma  0.31494   0.00371  0.30820  0.32144 1.74851       45      252
+shape 10.70401   0.16239 10.37800 11.01632 1.24330       86      183
 
-Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
-is a crude measure of effective sample size, and Rhat is the potential 
+Samples were drawn using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).

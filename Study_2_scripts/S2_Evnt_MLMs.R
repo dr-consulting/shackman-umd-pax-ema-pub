@@ -21,13 +21,13 @@ options(mc.cores = parallel::detectCores())
 
 #--------------------------------------------------------------------------------------------------
 # Location of repo stored locally
-wd<-paste0('~/dr-consulting_GH/shackman-umd-pax-ema-pub')
+wd<-paste0('~/github/ATNL/shackman-umd-pax-ema-pub')
 data.folder<-paste0(wd, '/Data')
 study2.model<-paste0(wd, '/Study_2_model_summaries')
 
 # Will save very large posterior files from analyses (not recommended for git repo)
 # For anyone attempting to reproduce these analyses be sure to identify a storage location with sufficient memory
-posterior_save_dir <- "/media/matthew/My Book"
+posterior_save_dir <- "/media/dr-owner/HDD1"
 study2.out<-paste0(posterior_save_dir, '/EMA_S2_Bayesian_Posteriors')
 
 # Also generally not recommended to store image files on GH... 
@@ -35,7 +35,6 @@ study2.graphics<-paste0(posterior_save_dir, '/EMA_S2_Graphics')
 #--------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
-# Loading Study 1 Data (from Emotion MS - Shackman et al. 2017)
 load(paste0(data.folder, '/study2_data.RData'))
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-

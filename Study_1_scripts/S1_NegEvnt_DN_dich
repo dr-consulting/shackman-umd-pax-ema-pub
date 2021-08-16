@@ -1,4 +1,4 @@
-// generated with brms 2.14.4
+// generated with brms 2.15.0
 functions {
 }
 data {
@@ -34,7 +34,7 @@ transformed parameters {
   r_1_1 = (sd_1[1] * (z_1[1]));
 }
 model {
-  // likelihood including all constants
+  // likelihood including constants
   if (!prior_only) {
     // initialize linear predictor term
     vector[N] mu = Intercept + rep_vector(0.0, N);
@@ -44,7 +44,7 @@ model {
     }
     target += bernoulli_logit_glm_lpmf(Y | Xc, mu, b);
   }
-  // priors including all constants
+  // priors including constants
   target += student_t_lpdf(Intercept | 3, 0, 2.5);
   target += student_t_lpdf(sd_1 | 3, 0, 2.5)
     - 1 * student_t_lccdf(0 | 3, 0, 2.5);

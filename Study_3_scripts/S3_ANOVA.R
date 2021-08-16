@@ -1,42 +1,70 @@
+library(tidyverse)
 library(brms)
+library(gganimate)
+library(tidybayes)
 
-data_folder <- "~/dr-consulting_GH/shackman-umd-pax-ema-pub/Data"
+# Code was used to bring in updated data for the project - SG performed more recent cleaning of these data
+n220_sg_spss <- haven::read_spss('~/Desktop/grogans_pax220_ratings_032521.sav')
 
-load(paste0(data_folder, "/study3_data.RData"))
+n220_model_df <- n220_sg_spss %>%
+    select(StudyID, UT_AvgRating, PT_AvgRating, US_AvgRating, PS_AvgRating, ZUSE_THIS_DN) %>%
+    mutate(
+        DN = ZUSE_THIS_DN,
+        ID = StudyID,
+    ) %>%
+    select(-ZUSE_THIS_DN, -StudyID) %>%
+    pivot_longer(-all_of(c('ID', 'DN')), values_to = 'rating', names_to = 'cond') %>%
+    mutate(
+        valence = ifelse(str_detect(cond, 'T'), 'Threat', 'Safety'),
+        valence = forcats::fct_relevel(valence, 'Safety', 'Threat'),
+        certainty = ifelse(str_detect(cond, 'U'), 'Uncertain', 'Certain'),
+        certainty = forcats::fct_relevel(certainty, 'Certain', 'Uncertain'),
+        cond = str_split(cond, '_') %>% map_chr(., 1)
+    )
 
+dat.study3 <- n220_model_df
+remove(list = c('n220_model_df', 'n220_sg_spss'))
+
+data_folder <- "~/github/ATNL/shackman-umd-pax-ema-pub/Data"
+# load(paste0(data_folder, "/study3_data.RData"))
+
+# Step 1 - Define general MLM formula
 anova_form <- bf(
-	rating ~ certainty*valence*DN + (1|ID)
-) + gaussian()
-
-fit <- brm(anova_form, data = dat.study3, 
-           prior = c(set_prior("normal(0, 5)", class = "b")), cores=3, 
-           chains = 3, iter = 20000, warmup = 15000, 
-           control = list(adapt_delta = .99, 
-                          max_treedepth = 15)
+    rating ~ certainty*valence*DN + (1|ID)
 )
 
-# Initial data checks suggest Gaussian prior may not be appropriate
-# Will cross-validate distributional assumptions of the model
-loo_fit <- loo(fit, reloo=TRUE)
-
-#######################################################################################################################
-# Gaussian distribution is not a great fit of the data. Looking for a model that 
-# better predicts the posterior distribution.
-
-anova_form_log <- bf(
-	rating ~ valence*DN+ (1|ID)
-) + lognormal()
-
-fit_log <- brm(anova_form_log, data = dat.study3, 
-               prior = c(set_prior("normal(0, 2)", class = "b")), cores=3, 
-               chains = 3, iter = 20000, warmup = 15000, 
-               control = list(adapt_delta = .99, 
-                              max_treedepth = 15)
+fit_gaussian <- brm(
+    anova_form + gaussian(), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
 )
 
-# Obtaining loo information criteria for cross-validation of model posterior
-loo_fit_log <- loo(fit_log, reloo=TRUE)
+loo_fit_gaussian <- loo(fit_gaussian, reloo=TRUE)
 
-# "Preferred" model is in the top row of output
-# Mutliply values in elpd_diff column by -2 to place on deviance scale 
-loo_compare(loo_fit, loo_fit_log)
+# Step 2 fit with a weakly informative Gamma prior on the likelihood
+fit_gamma <- brm(
+    anova_form + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma <- loo(fit_gamma, reloo=TRUE)
+
+# Create direct comparison of models 
+loocv_gaus_vs_gamma <- loo_compare(loo_fit_gaussian, loo_fit_gamma)
+print(loocv_gaus_vs_gamma)
+
+# Uncomment to save
+save.image(file = "~/github/ATNL/shackman-umd-pax-ema-pub/Data/study3_data.RData")
