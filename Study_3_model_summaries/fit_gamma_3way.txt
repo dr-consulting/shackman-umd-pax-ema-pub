@@ -1,0 +1,11 @@
+Guassian vs. Gamma LOOCV
+--------------------------
+             elpd_diff  se_diff  elpd_loo se_elpd_loo    p_loo se_p_loo
+fit_gamma       0.0000  0.00000 -513.8721    26.80244 156.6613 7.686832
+fit_gaussian -111.9244 14.20181 -625.7965    21.89168 150.3239 6.790139
+                looic se_looic
+fit_gamma    1027.744 53.60487
+fit_gaussian 1251.593 43.78337
+[1] "anova_form"          "dat.study3"          "data_folder"        
+[4] "fit_gamma"           "fit_gaussian"        "loo_fit_gamma"      
+[7] "loo_fit_gaussian"    "loocv_gaus_vs_gamma"

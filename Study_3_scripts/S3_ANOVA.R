@@ -66,5 +66,183 @@ loo_fit_gamma <- loo(fit_gamma, reloo=TRUE)
 loocv_gaus_vs_gamma <- loo_compare(loo_fit_gaussian, loo_fit_gamma)
 print(loocv_gaus_vs_gamma)
 
+# sink('~/github/ATNL/shackman-umd-pax-ema-pub/Study_3_model_summaries/fit_gamma_3way.txt')
+# cat('Guassian vs. Gamma LOOCV\n')
+# cat('--------------------------\n')
+# cat(print(loocv_gaus_vs_gamma %>% as.data.frame()))
+# cat('----------------------------\n')
 # Uncomment to save
-save.image(file = "~/github/ATNL/shackman-umd-pax-ema-pub/Data/study3_data.RData")
+# save.image(file = "~/github/ATNL/shackman-umd-pax-ema-pub/Data/study3_data.RData")
+
+###########################################################################################
+# remove 3-way interaction term 
+anova_form_all_2ways <- bf(
+    rating ~ certainty*valence + certainty*DN + DN*valence + (1|ID)
+)
+
+fit_gamma_all_2ways <- brm(
+    anova_form_all_2ways + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma_all_2ways <- loo(fit_gamma_all_2ways, reloo=TRUE)
+loocv_3way_vs_2way <- loo_compare(loo_fit_gamma_all_2ways, loo_fit_gamma)
+print(loocv_3way_vs_2way)
+
+# sink('~/github/ATNL/shackman-umd-pax-ema-pub/Study_3_model_summaries/fit_gamma_3way.txt')
+# cat('Guassian vs. Gamma LOOCV\n')
+# cat('--------------------------\n')
+# cat(print(loocv_3way_vs_2way %>% as.data.frame()))
+# cat('----------------------------\n')
+# cat(print(summary(fit_gamma_all_2ways)))
+# sink()
+
+#####################################################
+# drop valence_DN
+anova_form_drop_valence_DN <- bf(
+    rating ~ certainty*valence + certainty*DN + (1|ID)
+)
+
+fit_gamma_drop_valence_DN <- brm(
+    anova_form_drop_valence_DN + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma_drop_valence_DN <- loo(fit_gamma_drop_valence_DN, reloo=TRUE)
+
+#####################################################################
+# drop certainty x DN
+anova_form_drop_certainty_DN <- bf(
+    rating ~ certainty*valence + DN*valence + (1|ID)
+)
+
+fit_gamma_drop_certainty_DN <- brm(
+    anova_form_drop_certainty_DN + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma_drop_certainty_DN <- loo(fit_gamma_drop_certainty_DN, reloo=TRUE)
+
+#####################################################################
+# drop certainty x valence
+anova_form_drop_certainty_valence <- bf(
+    rating ~ certainty*DN + DN*valence + (1|ID)
+)
+
+fit_gamma_drop_certainty_valence <- brm(
+    anova_form_drop_certainty_valence + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+loo_fit_gamma_drop_certainty_valence <- loo(fit_gamma_drop_certainty_valence, reloo=TRUE)
+
+#######################################################################################################################
+# Only DN x Valence 
+anova_form_DN_valence <- bf(
+    rating ~ certainty + DN*valence + (1|ID)
+)
+
+fit_gamma_DN_valence <- brm(
+    anova_form_DN_valence + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma_DN_valence <- loo(fit_gamma_DN_valence, reloo=TRUE)
+
+
+
+########################################################################################################################
+# Only DN x certainty
+anova_form_DN_certainty <- bf(
+    rating ~ valence + DN*certainty + (1|ID)
+)
+
+fit_gamma_DN_certainty <- brm(
+    anova_form_DN_certainty + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma_DN_certainty <- loo(fit_gamma_DN_certainty, reloo=TRUE)
+#######################################################################################################################
+# Only main effects
+anova_form_main <- bf(
+    rating ~ valence + DN + certainty + (1|ID)
+)
+
+fit_gamma_main <- brm(
+    anova_form_main + Gamma(link = 'log'), 
+    data = dat.study3,
+    prior = c(set_prior("normal(0, 2)", class = "b")), 
+    cores = 3, 
+    chains = 3, 
+    iter = 20000, 
+    warmup = 15000, 
+    control = list(adapt_delta = .99, 
+                   max_treedepth = 15)
+)
+
+loo_fit_gamma_main <- loo(fit_gamma_main, reloo=TRUE)
+
+#######################################################################################################################
+loocv_all <- loo_compare(loo_fit_gamma_all_2ways, loo_fit_gamma_drop_certainty_valence, loo_fit_gamma, 
+                         loo_fit_gamma_drop_certainty_DN, loo_fit_gamma_drop_valence_DN, 
+                         loo_fit_gamma_DN_certainty, loo_fit_gamma_DN_valence, 
+                         loo_fit_gamma_main)
+
+loocv_all
+
+# sink('~/github/ATNL/shackman-umd-pax-ema-pub/Study_3_model_summaries/fit_gamma_final.txt')
+# cat('Guassian vs. Gamma LOOCV\n')
+# cat('--------------------------\n')
+# cat(print(loocv_3way_vs_2way %>% as.data.frame()))
+# cat('----------------------------\n')
+# cat('Summary Gamma Model Comparisons LOOCV\n')
+# cat('--------------------------\n')
+# cat(print(loocv_all %>% as.data.frame()))
+# cat('----------------------------\n')
+# print(summary(fit_gamma_main))
+# sink()
+
+summary(fit_gamma_DN_certainty)
+summary(fit_gamma_DN_valence)
